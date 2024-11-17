@@ -20,6 +20,6 @@
             "displayName": "Neon Dirt & Grass",
             "description": "Example tileset demonstrating basic connection rules and decorator",
             "path": "Samples~/Sample_NeonTileSet"
-        },
+        }
 	]
 }
