@@ -1,4 +1,4 @@
-using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using Unity.Collections;
@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 using static UnityEngine.Tilemaps.Tilemap;
+using UnityEngine.WSA;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -24,16 +25,44 @@ namespace Zlitz.Extra2D.BetterTile
         [SerializeField]
         private TilemapRenderer m_decoratorTilemapRenderer;
 
-        internal void Set(Vector3Int position, TileBase tile)
+        internal void Resolve(Vector3Int position)
         {
-            Init();
-            m_decoratorTilemap.SetTile(position, tile);
-        }
+            TileBase currentTile = m_tilemap.GetTile(position);
+            if (currentTile != null)
+            {
+                m_decoratorTilemap.SetTile(position, null);
+                return;
+            }
 
-        internal void Remove(Vector3Int position)
-        {
-            Init();
-            m_decoratorTilemap.SetTile(position, null);
+            TileSet tileSet = null;
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    TileBase tile = m_tilemap.GetTile(position + new Vector3Int(dx, dy, 0));
+                    if (tile is Tile betterTile)
+                    {
+                        tileSet = betterTile.tileSet;
+                    }
+                }
+            }
+
+            if (tileSet != null)
+            {
+                IEnumerable<TileSet.SpriteOutput> outputs = tileSet.MatchRulesForDecorator(position, new ITilemap(m_tilemap));
+                if (TrySampleSpriteOutput(position, outputs, out TileSet.SpriteOutput output))
+                {
+                    m_decoratorTilemap.SetTile(position, tileSet.decorator.GetTile(output.sprite));
+                }
+                else
+                {
+                    m_decoratorTilemap.SetTile(position, null);
+                }
+            }
+            else
+            {
+                m_decoratorTilemap.SetTile(position, null);
+            }
         }
 
         private void Awake()
@@ -84,31 +113,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             foreach (SyncTile syncTile in tiles)
             {
-                Vector3Int position = syncTile.position;
-
-                bool handled = false;
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        TileBase tile = tilemap.GetTile(position + new Vector3Int(dx, dy, 0));
-                        if (tile is Tile betterTile)
-                        {
-                            betterTile.UpdateDecorator(tilemap, decorator, position);
-                            handled = true;
-                            break;
-                        }
-                    }
-                    if (handled)
-                    {
-                        break;
-                    }
-                }
-
-                if (!handled)
-                {
-                    decorator.Remove(position);
-                }
+                Resolve(syncTile.position);
             }
         }
 
@@ -126,31 +131,36 @@ namespace Zlitz.Extra2D.BetterTile
 
             foreach (Vector3Int position in positions)
             {
-                bool handled = false;
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        TileBase tile = tilemap.GetTile(position + new Vector3Int(dx, dy, 0));
-                        if (tile is Tile betterTile)
-                        {
-                            betterTile.UpdateDecorator(tilemap, decorator, position);
-                            handled = true;
-                            break;
-                        }
-                    }
-                    if (handled)
-                    {
-                        break;
-                    }
-                }
-
-                if (!handled)
-                {
-                    decorator.Remove(position);
-                }
+                Resolve(position);
             }
         }
+
+        private bool TrySampleSpriteOutput(Vector3Int position, IEnumerable<TileSet.SpriteOutput> outputs, out TileSet.SpriteOutput output)
+        {
+            Vector3 pos = position;
+            Vector3 vec = new Vector3(12.9898f, 78.233f, -35.8033f);
+
+            float random = Mathf.Sin(Vector3.Dot(pos, vec)) * 43758.5453f;
+            random -= Mathf.Floor(random);
+
+            float totalWeight = outputs.Sum(o => o.weight);
+            random = Mathf.Clamp(random * totalWeight, 0.0f, totalWeight - 0.0001f);
+
+            float cumulativeWeight = 0.0f;
+            foreach (TileSet.SpriteOutput o in outputs)
+            {
+                cumulativeWeight += o.weight;
+                if (random < cumulativeWeight)
+                {
+                    output = o;
+                    return true;
+                }
+            }
+
+            output = default;
+            return false;
+        }
+
 
         private void Init()
         {

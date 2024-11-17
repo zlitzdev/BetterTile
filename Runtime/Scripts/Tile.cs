@@ -35,6 +35,8 @@ namespace Zlitz.Extra2D.BetterTile
         [SerializeField]
         private bool m_overwriteRules;
 
+        internal TileSet tileSet => m_tileSet;
+
         internal Tile baseTile => m_baseTile;
 
         internal bool overwriteRules => m_overwriteRules;
@@ -125,8 +127,7 @@ namespace Zlitz.Extra2D.BetterTile
                 {
                     for (int dy = -1; dy <= 1; dy++)
                     {
-                        Vector3Int tilePosition = position + new Vector3Int(dx, dy, 0);
-                        UpdateDecorator(unityTileMap, decorator, tilePosition);
+                        decorator.Resolve(position + new Vector3Int(dx, dy, 0));
                     }
                 }
             }
@@ -138,11 +139,22 @@ namespace Zlitz.Extra2D.BetterTile
         {
             base.RefreshTile(position, tilemap);
 
+            Tilemap unityTileMap = GetTileMap(tilemap);
+            TilemapDecorator decorator = null;
+            if (unityTileMap != null)
+            {
+                if (!unityTileMap.TryGetComponent(out decorator))
+                {
+                    decorator = unityTileMap.gameObject.AddComponent<TilemapDecorator>();
+                }
+            }
+
             for (int dx = -1; dx <= 1; dx++)
             {
                 for (int dy = -1; dy <= 1; dy++)
                 {
                     tilemap.RefreshTile(position + new Vector3Int(dx, dy, 0));
+                    decorator?.Resolve(position + new Vector3Int(dx, dy, 0));
                 }
             }
         }
@@ -159,28 +171,6 @@ namespace Zlitz.Extra2D.BetterTile
             else
             {
                 tileData.sprite = null;
-            }
-        }
-
-        internal void UpdateDecorator(Tilemap tilemap, TilemapDecorator decorator, Vector3Int position)
-        {
-            TileBase tile = tilemap.GetTile(position);
-            if (tile != null)
-            {
-                decorator.Remove(position);
-            }
-            else
-            {
-                IEnumerable<TileSet.SpriteOutput> outputs = m_tileSet.MatchRulesForDecorator(position, tilemap);
-                if (TrySampleSpriteOutput(position, outputs, out TileSet.SpriteOutput output))
-                {
-                    TileDecorator tileDecorator = m_tileSet.decorator;
-                    decorator.Set(position, tileDecorator.GetTile(output.sprite));
-                }
-                else
-                {
-                    decorator.Remove(position);
-                }
             }
         }
 
@@ -209,7 +199,6 @@ namespace Zlitz.Extra2D.BetterTile
             output = default;
             return false;
         }
-
 
         private static FieldInfo s_tilemapFieldInfo;
 

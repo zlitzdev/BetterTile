@@ -1,0 +1,1451 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7977812802718690444
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_6
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: -1327079755, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-6515196592185179958
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d46011c1fd8abfc43a1c021042716ac1, type: 3}
+  m_Name: Self
+  m_EditorClassIdentifier: 
+  m_color: {r: 1, g: 1, b: 0.7529412, a: 1}
+--- !u!114 &-6509721044612288129
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_5
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: -1907291902, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-4826719294600290287
+MonoBehaviour:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c8d1de450388444992b766cf91ca153, type: 3}
+  m_Name: Dirt (Default)
+  m_EditorClassIdentifier: 
+  m_color: {r: 0.6679245, g: 0.3708718, b: 0.2507867, a: 1}
+  m_tileSet: {fileID: 11400000}
+  m_colliderType: 2
+  m_baseTile: {fileID: 0}
+  m_overwriteRules: 0
+--- !u!114 &-4789263526029305369
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_3
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: 1666494698, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-3581722465086145606
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_0
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: 671845555, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-3223876198721048336
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_7
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: -677081029, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-1506617144329842424
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_1
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: 1458125952, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &-631567100787202635
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbc2df1dc9da66e48bc29abf2d781d8d, type: 3}
+  m_Name: Decorator
+  m_EditorClassIdentifier: 
+  m_color: {r: 0.7529412, g: 1, b: 1, a: 1}
+  m_tiles:
+  - {fileID: -3581722465086145606}
+  - {fileID: -1506617144329842424}
+  - {fileID: 1693344884240473717}
+  - {fileID: -4789263526029305369}
+  - {fileID: 5515624070271443890}
+  - {fileID: -6509721044612288129}
+  - {fileID: -7977812802718690444}
+  - {fileID: -3223876198721048336}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46f5c854408528e48ab819f7a7b0a6a8, type: 3}
+  m_Name: TileSet_Neon
+  m_EditorClassIdentifier: 
+  m_textures:
+  - {fileID: 2800000, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+  - {fileID: 2800000, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  - {fileID: 2800000, guid: ef1865bf36572704094d823978479b04, type: 3}
+  m_spriteEntries:
+  - m_sprite: {fileID: 671845555, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 8
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 546368753742929280}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1458125952, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 5
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 546368753742929280}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1084528304, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 2
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 546368753742929280}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1666494698, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 546368753742929280}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1066577148, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 5
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: -4826719294600290287}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1907291902, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 2
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: -4826719294600290287}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1327079755, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: -4826719294600290287}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -677081029, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: -4826719294600290287}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -799056880, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1414136439, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -248320022, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 882921092, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -272547659, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1312443917, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -499560720, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -785062879, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 606120597, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 945008626, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -558560241, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1688697795, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1138259693, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1615069382, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1527053811, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1633364385, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1172861723, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -121552336, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1335377003, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -2099937346, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -2087273398, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -355948898, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 524988208, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -984722727, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1935956249, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -959587561, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1286101307, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1628795735, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 940593125, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1847223170, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -391284892, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 943640715, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 259639255, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1322005832, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 2087394250, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1813556945, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 886699243, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -137546677, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1015403469, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1722590168, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -632207173, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 555884509, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1773375916, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1249597156, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 2081780687, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -5763661, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1644888082, guid: ef1865bf36572704094d823978479b04, type: 3}
+    m_weight: 1
+    m_tile: {fileID: -4826719294600290287}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -764222459, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1204730224, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1841301946, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1446932056, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 24708251, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -995847315, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1902302340, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 243859935, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 853213174, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1494532171, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1155221693, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 2069844216, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1787375813, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1684727566, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 366527499, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 240108523, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1869610987, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -826004125, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 1219471368, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 1241069537, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 793499593, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -448891689, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: 2070996924, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -1394879228, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -826781140, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -310382198, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -381646933, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -835535049, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 6890707298134549655}
+  - m_sprite: {fileID: -677864007, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 6890707298134549655}
+      m_bottom: {fileID: 6890707298134549655}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -973899125, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1666013140, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 0}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1618938568, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 6890707298134549655}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 6890707298134549655}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: 504130884, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 6890707298134549655}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 6890707298134549655}
+      m_right: {fileID: 546368753742929280}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -981356602, guid: 13dcbff6aa02a6e41b032d67c4b79196, type: 3}
+    m_weight: 1
+    m_tile: {fileID: 546368753742929280}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 546368753742929280}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
+  m_categories:
+  - {fileID: 6890707298134549655}
+  m_tiles:
+  - {fileID: -4826719294600290287}
+  - {fileID: 546368753742929280}
+  m_selfFilter: {fileID: -6515196592185179958}
+  m_decorator: {fileID: -631567100787202635}
+--- !u!114 &546368753742929280
+MonoBehaviour:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c8d1de450388444992b766cf91ca153, type: 3}
+  m_Name: Dirt (Grassy)
+  m_EditorClassIdentifier: 
+  m_color: {r: 0.2728728, g: 0.82641506, b: 0.31682438, a: 1}
+  m_tileSet: {fileID: 11400000}
+  m_colliderType: 2
+  m_baseTile: {fileID: -4826719294600290287}
+  m_overwriteRules: 1
+--- !u!114 &1693344884240473717
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_2
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: 1084528304, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &5515624070271443890
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Decorator_Neon_Dirt_Decorator_4
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: 1066577148, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Transform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  m_InstancedGameObject: {fileID: 0}
+  m_Flags: 1
+  m_ColliderType: 0
+--- !u!114 &6890707298134549655
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3618372db68b424449b568b39d3a587e, type: 3}
+  m_Name: Dirt
+  m_EditorClassIdentifier: 
+  m_color: {r: 0.4566037, g: 0.33551824, b: 0.26103947, a: 1}
+  m_tiles:
+  - {fileID: -4826719294600290287}
+  - {fileID: 546368753742929280}
