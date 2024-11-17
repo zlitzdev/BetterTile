@@ -14,11 +14,5 @@
 		"2d",
 		"tilemap",
 		"tile"
-	],
-	"files": [
-		"Runtime/*",
-		"Runtime.meta",
-		"Editor/*",
-		"Editor.meta"
 	]
 }
