@@ -1,0 +1,14 @@
+{
+    "name": "Zlitz.Extra2D.BetterTile.Runtime",
+    "rootNamespace": "Zlitz.Extra2D.BetterTile",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/com.zlitz.bettertile/Editor/Resources/TileSetEditorWindow.uss?fileID=7433441132597879392&amp;guid=7cf4cc425bf84c64c9da77cfd1645f0d&amp;type=3#TileSetEditorWindow" />
+    <Zlitz.Extra2D.BetterTile.SplitView name="root" fixed-pane-initial-dimension="350">
+        <ui:ScrollView name="left" class="dark-gray">
+            <uie:ObjectField label="Tile Set" type="Zlitz.Extra2D.BetterTile.TileSet, Zlitz.Extra2D.BetterTile.Runtime" allow-scene-objects="false" name="tileset" style="color: rgb(196, 196, 196);" />
+            <ui:ListView name="categories" virtualization-method="DynamicHeight" reorderable="true" show-foldout-header="true" show-add-remove-footer="true" show-bound-collection-size="true" header-title="Categories" reorder-mode="Animated" show-border="true" />
+            <ui:ListView name="tiles" virtualization-method="DynamicHeight" reorderable="true" show-foldout-header="true" show-add-remove-footer="true" show-bound-collection-size="true" header-title="Tiles" reorder-mode="Animated" show-border="true" />
+        </ui:ScrollView>
+        <ui:VisualElement name="right" style="flex-grow: 1;">
+            <Zlitz.Extra2D.BetterTile.PaintControl name="paint-control" style="padding-top: 4px; padding-right: 4px; padding-bottom: 4px; padding-left: 4px;" />
+            <ui:ScrollView name="right-scroll-view" mode="VerticalAndHorizontal" class="light-gray" style="flex-grow: 1; flex-shrink: 0; height: auto; min-height: auto; min-width: auto; align-items: flex-start;">
+                <Zlitz.Extra2D.BetterTile.TextureSetDisplay name="texture-set-display" style="background-color: rgba(0, 0, 0, 0); width: auto; height: auto; flex-grow: 1; flex-shrink: 0;" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </Zlitz.Extra2D.BetterTile.SplitView>
+</ui:UXML>

@@ -1,0 +1,18 @@
+{
+    "name": "Zlitz.Extra2D.BetterTile.Editor",
+    "rootNamespace": "Zlitz.Extra2D.BetterTile",
+    "references": [
+        "GUID:6fdfdf118920b1240b148e8abd3f85fd"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

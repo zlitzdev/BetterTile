@@ -1,0 +1,78 @@
+:root {
+    --bettertile-dark-gray: rgb(48, 48, 48);
+    --bettertile-light-gray: rgb(72, 72, 72);
+}
+
+.dark-gray {
+    background-color: var(--bettertile-dark-gray);
+}
+
+.light-gray {
+    background-color: var(--bettertile-light-gray);
+}
+
+.enclosed {
+    border-left-color: rgb(196, 196, 196);
+    border-right-color: rgb(196, 196, 196);
+    border-top-color: rgb(196, 196, 196);
+    border-bottom-color: rgb(196, 196, 196);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    margin-top: 2px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    margin-left: 2px;
+    padding-top: 0;
+    padding-right: 4px;
+    padding-bottom: 0;
+    padding-left: 4px;
+}
+
+.remove-button {
+    background-color: rgba(0, 0, 0, 0);
+    margin-top: 2px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    margin-left: 2px;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    -unity-font-style: bold;
+    font-size: 24px;
+    color: rgb(255, 0, 0);
+    border-left-color: rgba(0, 0, 0, 0);
+    border-right-color: rgba(0, 0, 0, 0);
+    border-top-color: rgba(0, 0, 0, 0);
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.unity-list-view__footer {
+    background-color: rgba(255, 255, 255, 0.13);
+    border-left-color: rgba(0, 0, 0, 0);
+    border-right-color: rgba(0, 0, 0, 0);
+    border-top-color: rgba(0, 0, 0, 0);
+    border-bottom-color: rgba(0, 0, 0, 0);
+    color: rgb(196, 196, 196);
+    height: 20px;
+}
+
+.unity-foldout__toggle {
+    background-color: rgba(0, 0, 0, 0.13);
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+    height: 24px;
+    -unity-text-align: upper-left;
+    color: rgb(196, 196, 196);
+    -unity-font-style: bold;
+    padding-left: 4px;
+}
+
+.unity-foldout__checkmark {
+    -unity-background-image-tint-color: rgb(196, 196, 196);
+}
