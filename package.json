@@ -3,6 +3,7 @@
 	"displayName": "Zlitz's Better Tile",
 	"version": "1.0.0",
 	"unity": "2022.3",
+	"license": "MIT",
 	"description": "",
 	"main": "README.md",
 	"repository": {
