@@ -17,6 +17,8 @@
 	],
 	"files": [
 		"Runtime/",
-		"Editor/"
+		"Runtime.meta",
+		"Editor/",
+		"Editor.meta"
 	]
 }
