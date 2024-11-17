@@ -17,9 +17,9 @@ A custom editor tool for Unity designed to simplify tile workflows.
 4. Create a new **Category**: Add a new **Category** in the **Categories** list and customize its name and color. Add any existing **Tile** to it. **Categories** are used to specify connection rules that are related to multiple **Tiles**.
 ![Create categories](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Categories.png?raw=true)
 5. Paint tile: Select `Tile` brush type, then select a **Tile** from the list. Click on any sprites used for that **Tile**.
-![Paint tiles](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Tiles.png?raw=true)
+![Paint tile](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Tile.png?raw=true)
 6. Paint rule: Seelct `Connection` brush type, then select either a **Tile** or a **Category**. Click on any connections that need to be matched with the selected **Tile**/**Cateogry**.
-![Paint categories](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Categories.png?raw=true)
+![Paint category](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Categorie.png?raw=true)
 7. Paint weight: Select `Weight` brush type, then enter a weight. Click on a sprite to change its weight in the sprite pool.
 ![Paint weight](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Weight.png?raw=true)
 8. Special features:
