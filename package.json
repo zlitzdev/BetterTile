@@ -16,9 +16,9 @@
 		"tile"
 	],
 	"files": [
-		"Runtime/",
+		"Runtime/*",
 		"Runtime.meta",
-		"Editor/",
+		"Editor/*",
 		"Editor.meta"
 	]
 }
