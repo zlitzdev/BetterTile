@@ -14,5 +14,12 @@
 		"2d",
 		"tilemap",
 		"tile"
+	],
+	"samples": [
+		{
+            "displayName": "Neon Dirt & Grass",
+            "description": "Example tileset demonstrating basic connection rules and decorator",
+            "path": "Samples~/Sample_NeonTile"
+        },
 	]
 }
