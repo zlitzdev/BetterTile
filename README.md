@@ -22,7 +22,7 @@ A custom editor tool for Unity designed to simplify tile workflows.
 ![Paint tile](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Tile.png?raw=true)
 
 9. Paint rule: Seelct `Connection` brush type, then select either a **Tile** or a **Category**. Click on any connections that need to be matched with the selected **Tile**/**Cateogry**.
-![Paint connection](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Connection.png?raw=true)
+![Paint connection](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Connection.png?raw=true | width=500)
 
 11. Paint weight: Select `Weight` brush type, then enter a weight. Click on a sprite to change its weight in the sprite pool.
 ![Paint weight](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Weight.png?raw=true)
