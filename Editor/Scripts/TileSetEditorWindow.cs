@@ -1213,6 +1213,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         private List<TextureDisplay> m_elements = new List<TextureDisplay>();
 
+        private Label m_message;
+
         private PaintControl m_paintControl;
 
         private float m_scale = 1.0f;
@@ -1449,6 +1451,18 @@ namespace Zlitz.Extra2D.BetterTile
                         m_elements.Add(newElemenet);
                     }
                 }
+            }
+
+            if (m_elements.Count <= 0)
+            {
+                m_message = new Label();
+                m_message.text = "Drag sliced textures here...";
+
+                m_message.style.flexGrow                = 1.0f;
+                m_message.style.fontSize                = 18.0f;
+                m_message.style.unityTextAlign          = TextAnchor.MiddleCenter;
+                m_message.style.unityFontStyleAndWeight = FontStyle.Italic;
+                Add(m_message);
             }
         }
 
