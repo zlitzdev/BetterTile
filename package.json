@@ -14,5 +14,9 @@
 		"2d",
 		"tilemap",
 		"tile"
+	],
+	"files": [
+		"Runtime/",
+		"Editor/"
 	]
 }
