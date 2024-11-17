@@ -13,7 +13,7 @@ A custom editor tool for Unity designed to simplify tile workflows.
 1. Create a **Tile Set**: Right click > `Create/Zlitz/Extra2D/Better Tile/Tile Set`. Double-click to open editor.
 2. Drop any related sliced textures in the designated area.
 3. Create a new **Tile**: Add a new **Tile** in the **Tiles** list and customize its name, color and properties to suit your needs. A **Tile** can inherit from another **Tile** and add its sprites to the sprite pool. Select `Overwrite rules` to overwrites the base sprite pool instead of adding to it.
-<img src="[https://your-image-url.type](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Tiles.png?raw=true)">
+<img src="https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Tiles.png?raw=true">
 
 5. Create a new **Category**: Add a new **Category** in the **Categories** list and customize its name and color. Add any existing **Tile** to it. **Categories** are used to specify connection rules that are related to multiple **Tiles**.
 ![Create categories](https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Categories.png?raw=true)
