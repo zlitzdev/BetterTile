@@ -310,18 +310,6 @@ MonoBehaviour:
       m_bottom: {fileID: 546368753742929280}
       m_bottomRight: {fileID: 0}
   - m_sprite: {fileID: 1666494698, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
-    m_weight: 1
-    m_tile: {fileID: -631567100787202635}
-    m_rule:
-      m_topLeft: {fileID: 0}
-      m_top: {fileID: 0}
-      m_topRight: {fileID: 0}
-      m_left: {fileID: 0}
-      m_right: {fileID: 0}
-      m_bottomLeft: {fileID: 0}
-      m_bottom: {fileID: 546368753742929280}
-      m_bottomRight: {fileID: 0}
-  - m_sprite: {fileID: 1066577148, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
     m_weight: 5
     m_tile: {fileID: -631567100787202635}
     m_rule:
@@ -333,7 +321,7 @@ MonoBehaviour:
       m_bottomLeft: {fileID: 0}
       m_bottom: {fileID: -4826719294600290287}
       m_bottomRight: {fileID: 0}
-  - m_sprite: {fileID: -1907291902, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  - m_sprite: {fileID: 1066577148, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
     m_weight: 2
     m_tile: {fileID: -631567100787202635}
     m_rule:
@@ -345,7 +333,7 @@ MonoBehaviour:
       m_bottomLeft: {fileID: 0}
       m_bottom: {fileID: -4826719294600290287}
       m_bottomRight: {fileID: 0}
-  - m_sprite: {fileID: -1327079755, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+  - m_sprite: {fileID: -1907291902, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
     m_weight: 1
     m_tile: {fileID: -631567100787202635}
     m_rule:
@@ -357,17 +345,29 @@ MonoBehaviour:
       m_bottomLeft: {fileID: 0}
       m_bottom: {fileID: -4826719294600290287}
       m_bottomRight: {fileID: 0}
+  - m_sprite: {fileID: -1327079755, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
+    m_weight: 4
+    m_tile: {fileID: -631567100787202635}
+    m_rule:
+      m_topLeft: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
+      m_topRight: {fileID: 0}
+      m_left: {fileID: 0}
+      m_right: {fileID: 0}
+      m_bottomLeft: {fileID: 0}
+      m_bottom: {fileID: 0}
+      m_bottomRight: {fileID: 0}
   - m_sprite: {fileID: -677081029, guid: c39fb9ba702dff6458ba91cd99da1bbc, type: 3}
     m_weight: 1
     m_tile: {fileID: -631567100787202635}
     m_rule:
       m_topLeft: {fileID: 0}
-      m_top: {fileID: 0}
+      m_top: {fileID: 6890707298134549655}
       m_topRight: {fileID: 0}
       m_left: {fileID: 0}
       m_right: {fileID: 0}
       m_bottomLeft: {fileID: 0}
-      m_bottom: {fileID: -4826719294600290287}
+      m_bottom: {fileID: 0}
       m_bottomRight: {fileID: 0}
   - m_sprite: {fileID: -799056880, guid: ef1865bf36572704094d823978479b04, type: 3}
     m_weight: 1
