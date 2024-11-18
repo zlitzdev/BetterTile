@@ -134,6 +134,13 @@ namespace Zlitz.Extra2D.BetterTile
 
         private bool TrySampleSpriteOutput(Vector3Int position, IEnumerable<TileSet.SpriteOutput> outputs, out TileSet.SpriteOutput output)
         {
+            int ss = m_tilemap?.GetInstanceID() ?? 0;
+
+            int sx = (ss * 1103515245 + 12345) & int.MaxValue;
+            int sy = (sx * 1103515245 + 12345) & int.MaxValue;
+            int sz = (sy * 1103515245 + 12345) & int.MaxValue;
+
+
             Vector3 pos = position;
             Vector3 vec = new Vector3(12.9898f, 78.233f, -35.8033f);
 

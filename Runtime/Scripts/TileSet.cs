@@ -40,11 +40,10 @@ namespace Zlitz.Extra2D.BetterTile
 
         internal TileDecorator decorator => m_decorator;
 
-        internal IEnumerable<SpriteOutput> MatchRules(Tile tile, Vector3Int position, ITilemap tilemap)
+        internal IEnumerable<SpriteOutput> MatchRules(Tile sourceTile, Vector3Int position, ITilemap tilemap)
         {
             List<SpriteOutput> results = new List<SpriteOutput>();
 
-            ConnectionRule currentRule = default;
             foreach (SpriteEntry spriteEntry in m_spriteEntries)
             {
                 if (spriteEntry.tile == null)
@@ -52,8 +51,9 @@ namespace Zlitz.Extra2D.BetterTile
                     continue;
                 }
 
-                Tile parentTile = tile;
                 bool isCorrectTileType = false;
+
+                Tile parentTile = sourceTile;
                 while (parentTile != null)
                 {
                     if (parentTile == spriteEntry.tile)
@@ -69,38 +69,77 @@ namespace Zlitz.Extra2D.BetterTile
                     continue;
                 }
 
-                bool matchedRules = spriteEntry.connectionRule.Check(tilemap, position, tile);
+                bool matchedRules = spriteEntry.connectionRule.Check(tilemap, position, sourceTile); ;
                 if (!matchedRules)
                 {
                     continue;
                 }
 
-                bool currentRuleIsGeneralized = currentRule.IsGeneralizedOf(spriteEntry.connectionRule);
-                if (currentRuleIsGeneralized || spriteEntry.connectionRule.alwaysUsed)
-                {
-                    if (currentRuleIsGeneralized && !spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
-                    {
-                        results = results.Where(r => r.connectionRule.alwaysUsed).ToList();
-                    }
-
-                    if (currentRuleIsGeneralized)
-                    {
-                        currentRule = spriteEntry.connectionRule;
-                    }
-
-                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
-                }
+                results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
             }
 
-            Tile baseTile = tile;
-            while (baseTile != null)
+            for (int i = results.Count - 1; i >= 0; i--)
             {
-                if (baseTile.overwriteRules && results.Any(o => o.ruleProvider == baseTile))
+                SpriteOutput currentOutput = results[i];
+
+                bool shouldRemove = false;
+
+                for (int j = 0; j < results.Count; j++)
                 {
-                    results = results.Where(o => o.ruleProvider.IsDescendantOf(baseTile)).ToList();
-                    break;
+                    if (j == i || !results[j].connectionRule.IsSame(currentOutput.connectionRule))
+                    {
+                        continue;
+                    }
+
+                    if (results[j].ruleProvider.IsDescendantOf(currentOutput.ruleProvider))
+                    {
+                        bool isOverwritten = true;
+
+                        Tile parentTile = results[j].ruleProvider;
+                        while (parentTile != null)
+                        {
+                            if (parentTile == currentOutput.ruleProvider)
+                            {
+                                isOverwritten = false;
+                                break;
+                            }
+
+                            if (parentTile.overwriteRules)
+                            {
+                                break;
+                            }
+                            parentTile = parentTile.baseTile;
+                        }
+
+                        if (isOverwritten)
+                        {
+                            shouldRemove = true;
+                            break;
+                        }
+                    }
                 }
-                baseTile = baseTile.baseTile;
+
+                if (!shouldRemove && !currentOutput.connectionRule.alwaysUsed)
+                {
+                    for (int j = 0; j < results.Count; j++)
+                    {
+                        if (j == i || currentOutput.connectionRule.IsSame(results[j].connectionRule))
+                        {
+                            continue;
+                        }
+
+                        if (currentOutput.connectionRule.IsGeneralizedOf(results[j].connectionRule))
+                        {
+                            shouldRemove = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldRemove)
+                {
+                    results.RemoveAt(i);
+                }
             }
 
             return results;
@@ -110,7 +149,6 @@ namespace Zlitz.Extra2D.BetterTile
         {
             List<SpriteOutput> results = new List<SpriteOutput>();
 
-            ConnectionRule currentRule = default;
             foreach (SpriteEntry spriteEntry in m_spriteEntries)
             {
                 if (spriteEntry.decorator == null)
@@ -124,26 +162,41 @@ namespace Zlitz.Extra2D.BetterTile
                     continue;
                 }
 
-                bool currentRuleIsGeneralized = currentRule.IsGeneralizedOf(spriteEntry.connectionRule);
-                if (currentRuleIsGeneralized || spriteEntry.connectionRule.alwaysUsed)
+                results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
+            }
+
+            for (int i = results.Count - 1; i >= 0; i--)
+            {
+                SpriteOutput currentOutput = results[i];
+
+                bool shouldRemove = false;
+
+                if (!currentOutput.connectionRule.alwaysUsed)
                 {
-                    if (currentRuleIsGeneralized && !spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
+                    for (int j = 0; j < results.Count; j++)
                     {
-                        results = results.Where(r => r.connectionRule.alwaysUsed).ToList();
-                    }
+                        if (j == i || currentOutput.connectionRule.IsSame(results[j].connectionRule))
+                        {
+                            continue;
+                        }
 
-                    if (currentRuleIsGeneralized)
-                    {
-                        currentRule = spriteEntry.connectionRule;
+                        if (currentOutput.connectionRule.IsGeneralizedOf(results[j].connectionRule))
+                        {
+                            shouldRemove = true;
+                            break;
+                        }
                     }
+                }
 
-                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
+                if (shouldRemove)
+                {
+                    results.RemoveAt(i);
                 }
             }
 
+
             return results;
         }
-
 
         [Serializable]
         private class SpriteEntry

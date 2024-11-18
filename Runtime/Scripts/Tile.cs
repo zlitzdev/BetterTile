@@ -7,8 +7,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 using ColliderType = UnityEngine.Tilemaps.Tile.ColliderType;
-using UnityEngine.UIElements;
-using TreeEditor;
+using System.Data.SqlTypes;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -164,7 +163,7 @@ namespace Zlitz.Extra2D.BetterTile
             tileData.colliderType = m_colliderType;
 
             IEnumerable<TileSet.SpriteOutput> outputs = m_tileSet.MatchRules(this, position, tilemap);
-            if (TrySampleSpriteOutput(position, outputs, out TileSet.SpriteOutput output))
+            if (TrySampleSpriteOutput(position, GetTileMap(tilemap), outputs, out TileSet.SpriteOutput output))
             {
                 tileData.sprite = output.sprite;
             }
@@ -174,9 +173,15 @@ namespace Zlitz.Extra2D.BetterTile
             }
         }
 
-        private bool TrySampleSpriteOutput(Vector3Int position, IEnumerable<TileSet.SpriteOutput> outputs, out TileSet.SpriteOutput output)
+        private bool TrySampleSpriteOutput(Vector3Int position, Tilemap tilemap, IEnumerable<TileSet.SpriteOutput> outputs, out TileSet.SpriteOutput output)
         {
-            Vector3 pos = position;
+            int ss = tilemap?.GetInstanceID() ?? 0;
+
+            int sx = (ss * 1103515245 + 12345) & int.MaxValue;
+            int sy = (sx * 1103515245 + 12345) & int.MaxValue;
+            int sz = (sy * 1103515245 + 12345) & int.MaxValue;
+
+            Vector3 pos = position + new Vector3Int(sx, sy, sz);
             Vector3 vec = new Vector3(12.9898f, 78.233f, -35.8033f);
 
             float random = Mathf.Sin(Vector3.Dot(pos, vec)) * 43758.5453f;
@@ -202,7 +207,7 @@ namespace Zlitz.Extra2D.BetterTile
 
         private static FieldInfo s_tilemapFieldInfo;
 
-        private static Tilemap GetTileMap(ITilemap tilemap)
+        internal static Tilemap GetTileMap(ITilemap tilemap)
         {
             if (s_tilemapFieldInfo == null)
             {

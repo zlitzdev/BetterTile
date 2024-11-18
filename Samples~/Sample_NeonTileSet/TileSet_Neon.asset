@@ -56,7 +56,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_color: {r: 0.26189387, g: 0.7584905, b: 0.28286177, a: 1}
   m_tileSet: {fileID: 11400000}
-  m_colliderType: 0
+  m_colliderType: 2
   m_baseTile: {fileID: -3813022046332051662}
   m_overwriteRules: 1
 --- !u!114 &-5463292466877917397
@@ -99,7 +99,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_color: {r: 0.6981132, g: 0.35711595, b: 0.17782122, a: 1}
   m_tileSet: {fileID: 11400000}
-  m_colliderType: 0
+  m_colliderType: 2
   m_baseTile: {fileID: 0}
   m_overwriteRules: 0
 --- !u!114 &-3509562887764897598

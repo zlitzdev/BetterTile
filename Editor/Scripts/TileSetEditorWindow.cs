@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
 using ColliderType = UnityEngine.Tilemaps.Tile.ColliderType;
-using System.Xml.Linq;
 
 namespace Zlitz.Extra2D.BetterTile 
 {
