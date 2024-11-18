@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
 using ColliderType = UnityEngine.Tilemaps.Tile.ColliderType;
+using System.Reflection;
 
 namespace Zlitz.Extra2D.BetterTile 
 {
@@ -92,9 +93,9 @@ namespace Zlitz.Extra2D.BetterTile
                 SerializedProperty categoriesProperty = serializedTileSet.FindProperty("m_categories");
                 categoriesProperty.MoveArrayElement(s, e);
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_paintControl.Rebuild();
             };
@@ -119,19 +120,23 @@ namespace Zlitz.Extra2D.BetterTile
                     newCategory.name = newName;
 
                     AssetDatabase.AddObjectToAsset(newCategory, m_tileSet);
+                    EditorUtility.SetDirty(m_tileSet);
+                    AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                     categoriesProperty.InsertArrayElementAtIndex(index);
-                    serializedTileSet.ApplyModifiedProperties();
+                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
 
                     SerializedProperty newCategoryProperty = categoriesProperty.GetArrayElementAtIndex(index);
                     newCategoryProperty.objectReferenceValue = newCategory;
 
                     m_categories[index] = newCategory;
+
+                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 }
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_paintControl.Rebuild();
             };
@@ -157,9 +162,9 @@ namespace Zlitz.Extra2D.BetterTile
                     categoriesProperty.DeleteArrayElementAtIndex(i);
                 }
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_paintControl.Rebuild();
             };
@@ -197,9 +202,9 @@ namespace Zlitz.Extra2D.BetterTile
 
                         categoriesProperty.DeleteArrayElementAtIndex(index);
 
-                        serializedTileSet.ApplyModifiedProperties();
+                        serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                         EditorUtility.SetDirty(m_tileSet);
-                        AssetDatabase.SaveAssets();
+                        AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                         UpdateCategories();
 
@@ -227,9 +232,9 @@ namespace Zlitz.Extra2D.BetterTile
                 SerializedProperty tilesProperty = serializedTileSet.FindProperty("m_tiles");
                 tilesProperty.MoveArrayElement(s, e);
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_categoriesListView.RefreshItems();
                 m_paintControl.Rebuild();
@@ -255,9 +260,11 @@ namespace Zlitz.Extra2D.BetterTile
                     newTile.name = newName;
 
                     AssetDatabase.AddObjectToAsset(newTile, m_tileSet);
+                    EditorUtility.SetDirty(m_tileSet);
+                    AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                     tilesProperty.InsertArrayElementAtIndex(index);
-                    serializedTileSet.ApplyModifiedProperties();
+                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
 
                     SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
                     newTileProperty.objectReferenceValue = newTile;
@@ -265,16 +272,18 @@ namespace Zlitz.Extra2D.BetterTile
                     m_tiles[index] = newTile;
 
                     SerializedObject newSerializedTile = new SerializedObject(newTile);
+                    newSerializedTile.Update();
 
                     SerializedProperty tileSetProperty = newSerializedTile.FindProperty("m_tileSet");
                     tileSetProperty.objectReferenceValue = m_tileSet;
+                    newSerializedTile.ApplyModifiedPropertiesWithoutUndo();
 
-                    newSerializedTile.ApplyModifiedProperties();
+                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 }
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_categoriesListView.RefreshItems();
                 m_paintControl.Rebuild();
@@ -301,9 +310,9 @@ namespace Zlitz.Extra2D.BetterTile
                     tilesProperty.DeleteArrayElementAtIndex(i);
                 }
 
-                serializedTileSet.ApplyModifiedProperties();
+                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                 m_categoriesListView.RefreshItems();
                 m_paintControl.Rebuild();
@@ -343,9 +352,9 @@ namespace Zlitz.Extra2D.BetterTile
 
                         tilesProperty.DeleteArrayElementAtIndex(index);
 
-                        serializedTileSet.ApplyModifiedProperties();
+                        serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                         EditorUtility.SetDirty(m_tileSet);
-                        AssetDatabase.SaveAssets();
+                        AssetDatabase.SaveAssetIfDirty(m_tileSet);
 
                         UpdateTiles();
 
@@ -458,6 +467,7 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_paintControl.Rebuild();
+                    m_categoriesListView.RefreshItems();
                 },
                 () =>
                 {
@@ -475,11 +485,13 @@ namespace Zlitz.Extra2D.BetterTile
 
             m_tilesListView.makeItem = () => new TileItem(m_tileSet);
 
-            m_tilesListView.bindItem = (e, i) => (e as TileItem)?.Bind(m_tiles, i, 
+            m_tilesListView.bindItem = (e, i) => (e as TileItem)?.Bind(m_tileSet, m_tiles, i, 
                 () => 
-                { 
-                    m_categoriesListView.RefreshItems(); 
+                {
                     m_paintControl.Rebuild();
+
+                    m_tilesListView.RefreshItems(); 
+                    m_categoriesListView.RefreshItems(); 
                 },
                 () =>
                 {
@@ -751,6 +763,7 @@ namespace Zlitz.Extra2D.BetterTile
         private EditableLabel m_name;
         private ColorField    m_color;
         private ListView      m_tilesList;
+        private Toggle        m_inverted;
 
         private TileSet            m_tileSet;
         private TileCategory       m_category;
@@ -758,35 +771,47 @@ namespace Zlitz.Extra2D.BetterTile
         private SerializedObject   m_serializedCategory;
         private SerializedProperty m_colorProperty;
         private SerializedProperty m_tilesProperty;
+        private SerializedProperty m_invertedProperty;
+
+        private int m_index;
+        private IList<TileCategory> m_categories;
+
+        private Action m_onNameChanged;
+        private Action m_onColorChanged;
 
         public void Bind(TileSet tileSet, IList<TileCategory> categories, int i, Action onNameChanged, Action onColorChanged)
         {
-            int index = i;
+            m_index = i;
+            m_categories = categories;
 
             m_tileSet  = tileSet;
-            m_category = categories[index];
+            m_category = categories[m_index];
             m_serializedCategory = new SerializedObject(m_category);
-            m_colorProperty = m_serializedCategory.FindProperty("m_color");
-            m_tilesProperty = m_serializedCategory.FindProperty("m_tiles");
+            m_colorProperty    = m_serializedCategory.FindProperty("m_color");
+            m_tilesProperty    = m_serializedCategory.FindProperty("m_tiles");
+            m_invertedProperty = m_serializedCategory.FindProperty("m_inverted");
 
-            // Name
+            m_onNameChanged  = onNameChanged;
+            m_onColorChanged = onColorChanged;
 
-            string currentName = categories[index].name;
-            string validatedName = ObjectNames.GetUniqueName(tileSet.categories.Take(index).Where(c => c != categories[index]).Select(c => c.name).ToArray(), currentName);
+            UpdateFields();
+        }
 
-            if (currentName != validatedName)
-            {
-                currentName = validatedName;
-                m_category.name = currentName;
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssets();
-            }
+        public TileCategoryItem()
+        {
+            AddToClassList("dark-gray");
+            AddToClassList("enclosed");
 
-            m_name.text = currentName;
-            m_name.color = m_colorProperty.colorValue;
+            VisualElement nameAndColor = new VisualElement();
+            nameAndColor.style.flexDirection = FlexDirection.Row;
+            Add(nameAndColor);
+
+            m_name = new EditableLabel();
+            m_name.color          = Color.white;
+            m_name.style.flexGrow = 1.0f;
             m_name.onValueChanged += (newName) =>
             {
-                if (index >= categories.Count)
+                if (m_index >= m_categories.Count)
                 {
                     return;
                 }
@@ -795,23 +820,28 @@ namespace Zlitz.Extra2D.BetterTile
                 {
                     newName = "Tile Category";
                 }
-                newName = ObjectNames.GetUniqueName(tileSet.categories.Where(c => index < categories.Count && c != m_category).Select(c => c.name).ToArray(), newName);
+                newName = ObjectNames.GetUniqueName(m_tileSet.categories.Where(c => c != m_category).Select(c => c.name).ToArray(), newName);
                 m_category.name = newName;
-                
+
                 EditorUtility.SetDirty(m_category);
                 AssetDatabase.SaveAssetIfDirty(m_category);
 
+                m_serializedCategory.Update();
+                UpdateFields();
+
                 m_name.text = newName;
 
-                onNameChanged?.Invoke();
+                m_onNameChanged?.Invoke();
             };
 
-            // Color
+            nameAndColor.Add(m_name);
 
-            Color currentColor = m_colorProperty.colorValue;
-            currentColor.a = 1.0f;
+            m_color = new ColorField();
+            m_color.value          = Color.white;
+            m_color.showEyeDropper = false;
+            m_color.showAlpha      = false;
+            m_color.style.width    = 36.0f;
 
-            m_color.value = currentColor;
             m_color.RegisterValueChangedCallback(e =>
             {
                 Color newColor = e.newValue;
@@ -819,12 +849,96 @@ namespace Zlitz.Extra2D.BetterTile
 
                 m_name.color = newColor;
                 m_colorProperty.colorValue = newColor;
-                m_serializedCategory.ApplyModifiedProperties();
+                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
 
-                onColorChanged?.Invoke();
+                m_onColorChanged?.Invoke();
             });
 
-            // Tiles
+            nameAndColor.Add(m_color);
+
+            m_tilesList = new ListView();
+            m_tilesList.showAddRemoveFooter = true;
+
+            m_tilesList.itemIndexChanged += (s, e) =>
+            {
+                if (s == e)
+                {
+                    return;
+                }
+
+                m_tilesProperty.MoveArrayElement(s, e);
+
+                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(m_category);
+                AssetDatabase.SaveAssetIfDirty(m_category);
+            };
+
+            m_tilesList.itemsAdded += (indices) =>
+            {
+                indices = indices.OrderBy(i => i);
+                foreach (int index in indices)
+                {
+                    Tile defaultTile = null;
+
+                    m_tilesProperty.InsertArrayElementAtIndex(index);
+                    m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
+
+                    SerializedProperty newTileProperty = m_tilesProperty.GetArrayElementAtIndex(index);
+                    newTileProperty.objectReferenceValue = defaultTile;
+
+                    m_tiles[index] = defaultTile;
+                }
+
+                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(m_category);
+                AssetDatabase.SaveAssetIfDirty(m_category);
+            };
+
+            m_tilesList.itemsRemoved += (indices) =>
+            {
+                indices = indices.OrderByDescending(i => i);
+                foreach (int i in indices)
+                {
+                    m_tilesProperty.DeleteArrayElementAtIndex(i);
+                }
+
+                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(m_category);
+                AssetDatabase.SaveAssetIfDirty(m_category);
+            };
+
+            Add(m_tilesList);
+
+            m_inverted = new Toggle("Inverted");
+
+            m_inverted.RegisterValueChangedCallback(e =>
+            {
+                m_invertedProperty.boolValue = e.newValue;
+                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
+            });
+
+            Add(m_inverted);
+        }
+
+        private void UpdateFields()
+        {
+            string currentName = m_category.name;
+            string validatedName = ObjectNames.GetUniqueName(m_categories.Take(m_index).Where(c => c != m_categories[m_index]).Select(c => c.name).ToArray(), currentName);
+
+            if (currentName != validatedName)
+            {
+                currentName = validatedName;
+                m_category.name = currentName;
+                EditorUtility.SetDirty(m_category);
+                AssetDatabase.SaveAssetIfDirty(m_category);
+            }
+
+            m_name.text = currentName;
+            m_name.color = m_colorProperty.colorValue;
+
+            Color currentColor = m_colorProperty.colorValue;
+            currentColor.a = 1.0f;
+            m_color.value = currentColor;
 
             m_tiles = m_category.tiles?.ToList() ?? new List<Tile>();
 
@@ -845,85 +959,12 @@ namespace Zlitz.Extra2D.BetterTile
                         SerializedProperty tileProperty = m_tilesProperty.GetArrayElementAtIndex(i);
                         tileProperty.objectReferenceValue = t;
                         m_tiles[i] = t;
-                        m_serializedCategory.ApplyModifiedProperties();
+                        m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
                     };
                 }
             };
-        }
 
-        public TileCategoryItem()
-        {
-            AddToClassList("dark-gray");
-            AddToClassList("enclosed");
-
-            VisualElement nameAndColor = new VisualElement();
-            nameAndColor.style.flexDirection = FlexDirection.Row;
-            Add(nameAndColor);
-
-            m_name = new EditableLabel();
-            m_name.color          = Color.white;
-            m_name.style.flexGrow = 1.0f;
-            nameAndColor.Add(m_name);
-
-            m_color = new ColorField();
-            m_color.value          = Color.white;
-            m_color.showEyeDropper = false;
-            m_color.showAlpha      = false;
-            m_color.style.width    = 36.0f;
-            nameAndColor.Add(m_color);
-
-            m_tilesList = new ListView();
-            m_tilesList.showAddRemoveFooter = true;
-
-            m_tilesList.itemIndexChanged += (s, e) =>
-            {
-                if (s == e)
-                {
-                    return;
-                }
-
-                m_tilesProperty.MoveArrayElement(s, e);
-
-                m_serializedCategory.ApplyModifiedProperties();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssets();
-            };
-
-            m_tilesList.itemsAdded += (indices) =>
-            {
-                indices = indices.OrderBy(i => i);
-                foreach (int index in indices)
-                {
-                    Tile defaultTile = null;
-
-                    m_tilesProperty.InsertArrayElementAtIndex(index);
-                    m_serializedCategory.ApplyModifiedProperties();
-
-                    SerializedProperty newTileProperty = m_tilesProperty.GetArrayElementAtIndex(index);
-                    newTileProperty.objectReferenceValue = defaultTile;
-
-                    m_tiles[index] = defaultTile;
-                }
-
-                m_serializedCategory.ApplyModifiedProperties();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-            };
-
-            m_tilesList.itemsRemoved += (indices) =>
-            {
-                indices = indices.OrderByDescending(i => i);
-                foreach (int i in indices)
-                {
-                    m_tilesProperty.DeleteArrayElementAtIndex(i);
-                }
-
-                m_serializedCategory.ApplyModifiedProperties();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssets();
-            };
-
-            Add(m_tilesList);
+            m_inverted.value = m_invertedProperty.boolValue;
         }
     }
 
@@ -943,104 +984,31 @@ namespace Zlitz.Extra2D.BetterTile
         private SerializedProperty m_baseTileProperty;
         private SerializedProperty m_overwriteRulesProperty;
 
-        public void Bind(IList<Tile> tiles, int i, Action onNameChanged, Action onColorChanged, Action onBaseTileChanged)
-        {
-            int index = i;
+        private int         m_index;
+        private IList<Tile> m_tiles;
 
-            m_tile = tiles[index];
+        private Action m_onNameChanged;
+        private Action m_onColorChanged;
+        private Action m_onBaseTileChanged;
+
+        public void Bind(TileSet tileSet, IList<Tile> tiles, int i, Action onNameChanged, Action onColorChanged, Action onBaseTileChanged)
+        {
+            m_index = i;
+            m_tiles = tiles;
+
+            m_tileSet = tileSet;
+            m_tile = tiles[m_index];
             m_serializedTile = new SerializedObject(m_tile);
-            m_colorProperty = m_serializedTile.FindProperty("m_color");
-            m_colliderTypeProperty = m_serializedTile.FindProperty("m_colliderType");
-            m_baseTileProperty = m_serializedTile.FindProperty("m_baseTile");
+            m_colorProperty          = m_serializedTile.FindProperty("m_color");
+            m_colliderTypeProperty   = m_serializedTile.FindProperty("m_colliderType");
+            m_baseTileProperty       = m_serializedTile.FindProperty("m_baseTile");
             m_overwriteRulesProperty = m_serializedTile.FindProperty("m_overwriteRules");
 
-            // Name
+            m_onNameChanged     = onNameChanged;
+            m_onColorChanged    = onColorChanged;
+            m_onBaseTileChanged = onBaseTileChanged;
 
-            string currentName = tiles[index].name;
-            string validatedName = ObjectNames.GetUniqueName(m_tileSet.tiles.Take(index).Where(t => t != tiles[index]).Select(t => t.name).ToArray(), currentName);
-
-            if (currentName != validatedName)
-            {
-                currentName = validatedName;
-                m_tile.name = currentName;
-                EditorUtility.SetDirty(m_tile);
-                AssetDatabase.SaveAssets();
-            }
-
-            m_name.text = currentName;
-            m_name.color = m_colorProperty.colorValue;
-            m_name.onValueChanged += (newName) =>
-            {
-                if (index >= tiles.Count)
-                {
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(newName))
-                {
-                    newName = "Tile";
-                }
-                newName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => index < tiles.Count && t != m_tile).Select(c => c.name).ToArray(), newName);
-                m_tile.name = newName;
-
-                EditorUtility.SetDirty(m_tile);
-                AssetDatabase.SaveAssetIfDirty(m_tile);
-
-                m_name.text = newName;
-                onNameChanged?.Invoke();
-            };
-
-            // Color
-
-            Color currentColor = m_colorProperty.colorValue;
-            currentColor.a = 1.0f;
-
-            m_color.value = currentColor;
-            m_color.RegisterValueChangedCallback(e =>
-            {
-                Color newColor = e.newValue;
-                newColor.a = 1.0f;
-
-                m_name.color = newColor;
-                m_colorProperty.colorValue = newColor;
-                m_serializedTile.ApplyModifiedProperties();
-
-                onColorChanged?.Invoke();
-            });
-
-            // Collider type
-
-            ColliderType colliderType = (ColliderType)m_colliderTypeProperty.enumValueIndex;
-
-            m_colliderType.value = colliderType;
-            m_colliderType.RegisterValueChangedCallback(e =>
-            {
-                ColliderType newColliderType = (ColliderType)e.newValue;
-
-                m_colliderTypeProperty.enumValueIndex = (int)newColliderType;
-                m_serializedTile.ApplyModifiedProperties();
-            });
-
-            // Base tile
-
-            m_baseTile.value = m_baseTileProperty.objectReferenceValue as Tile;
-            m_baseTile.filter = t => t == null || !t.IsDescendantOf(m_tile);
-            m_baseTile.onValueChanged += (t) =>
-            {
-                m_baseTileProperty.objectReferenceValue = t;
-                m_serializedTile.ApplyModifiedProperties();
-
-                onBaseTileChanged?.Invoke();
-            };
-
-            // Overwrite rules
-
-            m_overwriteRules.value = m_overwriteRulesProperty.boolValue;
-            m_overwriteRules.RegisterValueChangedCallback(e =>
-            {
-                m_overwriteRulesProperty.boolValue = e.newValue;
-                m_serializedTile.ApplyModifiedProperties();
-            });
+            UpdateFields();
         }
 
         public TileItem(TileSet tileSet)
@@ -1057,6 +1025,31 @@ namespace Zlitz.Extra2D.BetterTile
             m_name = new EditableLabel();
             m_name.color = Color.white;
             m_name.style.flexGrow = 1.0f;
+
+            m_name.onValueChanged += (newName) =>
+            {
+                if (m_index >= m_tiles.Count)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(newName))
+                {
+                    newName = "Tile";
+                }
+                newName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => t != m_tile).Select(c => c.name).ToArray(), newName);
+                m_tile.name = newName;
+
+                EditorUtility.SetDirty(m_tile);
+                AssetDatabase.SaveAssetIfDirty(m_tile);
+
+                m_serializedTile.Update();
+                UpdateFields();
+
+                m_name.text = newName;
+                m_onNameChanged?.Invoke();
+            };
+
             nameAndColor.Add(m_name);
 
             m_color = new ColorField();
@@ -1064,19 +1057,85 @@ namespace Zlitz.Extra2D.BetterTile
             m_color.showEyeDropper = false;
             m_color.showAlpha = false;
             m_color.style.width = 36.0f;
+
+            m_color.RegisterValueChangedCallback(e =>
+            {
+                Color newColor = e.newValue;
+                newColor.a = 1.0f;
+
+                m_name.color = newColor;
+                m_colorProperty.colorValue = newColor;
+                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
+
+                m_onColorChanged?.Invoke();
+            });
+
             nameAndColor.Add(m_color);
 
             m_colliderType = new EnumField("Collider type", ColliderType.None);
             m_colliderType.style.marginLeft = 16.0f;
+
+            m_colliderType.RegisterValueChangedCallback(e =>
+            {
+                ColliderType newColliderType = (ColliderType)e.newValue;
+
+                m_colliderTypeProperty.enumValueIndex = (int)newColliderType;
+                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
+            });
+
             Add(m_colliderType);
 
             m_baseTile = new ScopedTileSelector(m_tileSet, "Base tile");
             m_baseTile.style.marginLeft = 16.0f;
+            m_baseTile.onValueChanged += (t) =>
+            {
+                m_baseTileProperty.objectReferenceValue = t;
+                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
+
+                m_onBaseTileChanged?.Invoke();
+            };
+
             Add(m_baseTile);
 
             m_overwriteRules = new Toggle("Overwrite rules");
             m_overwriteRules.style.marginLeft = 16.0f;
+
+            m_overwriteRules.RegisterValueChangedCallback(e =>
+            {
+                m_overwriteRulesProperty.boolValue = e.newValue;
+                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
+            });
+
             Add(m_overwriteRules);
+        }
+
+        private void UpdateFields()
+        {
+            string currentName = m_tiles[m_index].name;
+            string validatedName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => t != m_tile).Select(t => t.name).ToArray(), currentName);
+
+            if (currentName != validatedName)
+            {
+                currentName = validatedName;
+                m_tile.name = currentName;
+                EditorUtility.SetDirty(m_tile);
+                AssetDatabase.SaveAssetIfDirty(m_tile);
+            }
+
+            m_name.text = currentName;
+            m_name.color = m_colorProperty.colorValue;
+
+            Color currentColor = m_colorProperty.colorValue;
+            currentColor.a = 1.0f;
+            m_color.value = currentColor;
+
+            ColliderType colliderType = (ColliderType)m_colliderTypeProperty.enumValueIndex;
+            m_colliderType.value = colliderType;
+
+            m_baseTile.value = m_baseTileProperty.objectReferenceValue as Tile;
+            m_baseTile.filter = t => t == null || !t.IsDescendantOf(m_tile);
+
+            m_overwriteRules.value = m_overwriteRulesProperty.boolValue;
         }
     }
 
@@ -1117,9 +1176,9 @@ namespace Zlitz.Extra2D.BetterTile
 
                             selfFilterProperty.objectReferenceValue = selfFilter;
 
-                            serializedTileSet.ApplyModifiedProperties();
+                            serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                             EditorUtility.SetDirty(tileSet);
-                            AssetDatabase.SaveAssets();
+                            AssetDatabase.SaveAssetIfDirty(tileSet);
 
                             target = selfFilter;
                         }
@@ -1141,9 +1200,9 @@ namespace Zlitz.Extra2D.BetterTile
 
                             decoratorProperty.objectReferenceValue = decorator;
 
-                            serializedTileSet.ApplyModifiedProperties();
+                            serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
                             EditorUtility.SetDirty(tileSet);
-                            AssetDatabase.SaveAssets();
+                            AssetDatabase.SaveAssetIfDirty(tileSet);
 
                             target = decorator;
                         }
@@ -1176,7 +1235,7 @@ namespace Zlitz.Extra2D.BetterTile
 
                 m_name.style.color = newColor;
                 m_colorProperty.colorValue = newColor;
-                m_serializedTarget.ApplyModifiedProperties();
+                m_serializedTarget.ApplyModifiedPropertiesWithoutUndo();
 
                 onColorChanged?.Invoke();
             });
@@ -1318,6 +1377,22 @@ namespace Zlitz.Extra2D.BetterTile
                     };
                 };
             });
+
+            RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == 0)
+                {
+                    m_paintControl.painting = true;
+                }
+            });
+            RegisterCallback<MouseUpEvent>(e =>
+            {
+                m_paintControl.painting = false;
+            });
+            RegisterCallback<MouseLeaveEvent>(e =>
+            {
+                m_paintControl.painting = false;
+            });
         }
 
         private void ValidateSpriteEntries()
@@ -1422,7 +1497,7 @@ namespace Zlitz.Extra2D.BetterTile
                 m_spriteEntriesProperty.DeleteArrayElementAtIndex(invalidIndex);
             }
 
-            m_serializedTileSet.ApplyModifiedProperties();
+            m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private void UpdateElements()
@@ -1460,7 +1535,7 @@ namespace Zlitz.Extra2D.BetterTile
                             EditorApplication.delayCall += () =>
                             {
                                 m_texturesProperty.DeleteArrayElementAtIndex(index);
-                                m_serializedTileSet.ApplyModifiedProperties();
+                                m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
 
                                 ValidateSpriteEntries();
                                 UpdateElements();
@@ -1529,12 +1604,12 @@ namespace Zlitz.Extra2D.BetterTile
                 SerializedProperty newTextureProperty = m_texturesProperty.GetArrayElementAtIndex(index);
                 newTextureProperty.objectReferenceValue = texture;
 
-                m_serializedTileSet.ApplyModifiedProperties();
+                m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
 
                 onNewTextureAdded?.Invoke();
             }
 
-            m_serializedTileSet.ApplyModifiedProperties();
+            m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
 
             ValidateSpriteEntries();
             UpdateElements();
@@ -1898,6 +1973,43 @@ namespace Zlitz.Extra2D.BetterTile
                 m_tilePainting.style.borderTopWidth    = 2.0f;
                 m_tilePainting.style.borderLeftWidth   = 2.0f;
                 m_tilePainting.style.borderRightWidth  = 2.0f;
+
+                if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingTile != null && m_paintControl.paintingTile is UnityEngine.Object tile)
+                {
+                    if (m_tileProperty.objectReferenceValue != tile)
+                    {
+                        m_tileProperty.objectReferenceValue = tile;
+                        m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+
+                        if (tile is TileDecorator decorator)
+                        {
+                            Sprite decoratorSprite = m_spriteProperty.objectReferenceValue as Sprite;
+
+                            DecoratorTile decoratorTile = DecoratorTile.Create(decoratorSprite);
+                            decoratorTile.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                            decoratorTile.name = $"Decorator_{decoratorSprite.name}";
+
+                            AssetDatabase.AddObjectToAsset(decoratorTile, decorator);
+
+                            SerializedObject serializedDecorator = new SerializedObject(decorator);
+
+                            SerializedProperty tilesProperty = serializedDecorator.FindProperty("m_tiles");
+
+                            int index = tilesProperty.arraySize;
+                            tilesProperty.InsertArrayElementAtIndex(index);
+
+                            SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
+                            newTileProperty.objectReferenceValue = decoratorTile;
+
+                            serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
+
+                            EditorUtility.SetDirty(decorator);
+                            AssetDatabase.SaveAssetIfDirty(decorator);
+                        }
+                    }
+                }
             });
             m_tilePainting.RegisterCallback<MouseLeaveEvent>(e =>
             {
@@ -1915,7 +2027,7 @@ namespace Zlitz.Extra2D.BetterTile
                         if (m_tileProperty.objectReferenceValue != tile)
                         {
                             m_tileProperty.objectReferenceValue = tile;
-                            m_tileProperty.serializedObject.ApplyModifiedProperties();
+                            m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                             UpdateFields();
 
@@ -1939,7 +2051,7 @@ namespace Zlitz.Extra2D.BetterTile
                                 SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
                                 newTileProperty.objectReferenceValue = decoratorTile;
 
-                                serializedDecorator.ApplyModifiedProperties();
+                                serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
 
                                 EditorUtility.SetDirty(decorator);
                                 AssetDatabase.SaveAssetIfDirty(decorator);
@@ -1952,7 +2064,7 @@ namespace Zlitz.Extra2D.BetterTile
                     TileDecorator decorator = m_tileProperty.objectReferenceValue as TileDecorator;
 
                     m_tileProperty.objectReferenceValue = null;
-                    m_tileProperty.serializedObject.ApplyModifiedProperties();
+                    m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
 
@@ -1984,7 +2096,7 @@ namespace Zlitz.Extra2D.BetterTile
 
                             AssetDatabase.RemoveObjectFromAsset(tileToRemove);
 
-                            serializedDecorator.ApplyModifiedProperties();
+                            serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
 
                             EditorUtility.SetDirty(decorator);
                             AssetDatabase.SaveAssetIfDirty(decorator);
@@ -2022,6 +2134,14 @@ namespace Zlitz.Extra2D.BetterTile
                 m_weightPainting.style.borderTopWidth    = 2.0f;
                 m_weightPainting.style.borderLeftWidth   = 2.0f;
                 m_weightPainting.style.borderRightWidth  = 2.0f;
+
+                if (m_paintControl != null && m_paintControl.painting)
+                {
+                    m_weightProperty.floatValue = m_paintControl.weight;
+                    m_weightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                    UpdateFields();
+                }
             });
             m_weightPainting.RegisterCallback<MouseLeaveEvent>(e =>
             {
@@ -2035,7 +2155,7 @@ namespace Zlitz.Extra2D.BetterTile
                 if (m_paintControl != null)
                 {
                     m_weightProperty.floatValue = m_paintControl.weight;
-                    m_weightProperty.serializedObject.ApplyModifiedProperties();
+                    m_weightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
                 }
@@ -2290,7 +2410,7 @@ namespace Zlitz.Extra2D.BetterTile
                 if (e.button == 0)
                 {
                     m_alwaysUsedProperty.boolValue = !m_alwaysUsedProperty.boolValue;
-                    m_alwaysUsedProperty.serializedObject.ApplyModifiedProperties();
+                    m_alwaysUsedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
                 }
@@ -2304,7 +2424,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_topLeftProperty.objectReferenceValue = filter;
-                        m_topLeftProperty.serializedObject.ApplyModifiedProperties();
+                        m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2312,16 +2432,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_topLeftProperty.objectReferenceValue = null;
-                    m_topLeftProperty.serializedObject.ApplyModifiedProperties();
+                    m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_topLeftProperty.objectReferenceValue = filter;
+                        m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleTopLeft.style.top    = Length.Percent(0.0f);
             m_ruleTopLeft.style.left   = Length.Percent(0.0f);
             m_ruleTopLeft.style.width  = Length.Percent(25.0f);
             m_ruleTopLeft.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleTopLeft);
 
             m_ruleTop = CreatePaintable(
@@ -2330,7 +2459,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_topProperty.objectReferenceValue = filter;
-                        m_topProperty.serializedObject.ApplyModifiedProperties();
+                        m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2338,16 +2467,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_topProperty.objectReferenceValue = null;
-                    m_topProperty.serializedObject.ApplyModifiedProperties();
+                    m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_topProperty.objectReferenceValue = filter;
+                        m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleTop.style.top    = Length.Percent(0.0f);
             m_ruleTop.style.left   = Length.Percent(25.0f);
             m_ruleTop.style.width  = Length.Percent(50.0f);
             m_ruleTop.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleTop);
 
             m_ruleTopRight = CreatePaintable(
@@ -2356,7 +2494,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_topRightProperty.objectReferenceValue = filter;
-                        m_topRightProperty.serializedObject.ApplyModifiedProperties();
+                        m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2364,16 +2502,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_topRightProperty.objectReferenceValue = null;
-                    m_topRightProperty.serializedObject.ApplyModifiedProperties();
+                    m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_topRightProperty.objectReferenceValue = filter;
+                        m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleTopRight.style.top    = Length.Percent(0.0f);
             m_ruleTopRight.style.left   = Length.Percent(75.0f);
             m_ruleTopRight.style.width  = Length.Percent(25.0f);
             m_ruleTopRight.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleTopRight);
 
             m_ruleLeft = CreatePaintable(
@@ -2382,7 +2529,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_leftProperty.objectReferenceValue = filter;
-                        m_leftProperty.serializedObject.ApplyModifiedProperties();
+                        m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2390,16 +2537,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_leftProperty.objectReferenceValue = null;
-                    m_leftProperty.serializedObject.ApplyModifiedProperties();
+                    m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_leftProperty.objectReferenceValue = filter;
+                        m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleLeft.style.top    = Length.Percent(25.0f);
             m_ruleLeft.style.left   = Length.Percent(0.0f);
             m_ruleLeft.style.width  = Length.Percent(25.0f);
             m_ruleLeft.style.height = Length.Percent(50.0f);
-            
             Add(m_ruleLeft);
 
             m_ruleRight = CreatePaintable(
@@ -2408,7 +2564,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_rightProperty.objectReferenceValue = filter;
-                        m_rightProperty.serializedObject.ApplyModifiedProperties();
+                        m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2416,16 +2572,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_rightProperty.objectReferenceValue = null;
-                    m_rightProperty.serializedObject.ApplyModifiedProperties();
+                    m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_rightProperty.objectReferenceValue = filter;
+                        m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleRight.style.top    = Length.Percent(25.0f);
             m_ruleRight.style.left   = Length.Percent(75.0f);
             m_ruleRight.style.width  = Length.Percent(25.0f);
             m_ruleRight.style.height = Length.Percent(50.0f);
-            
             Add(m_ruleRight);
 
             m_ruleBottomLeft = CreatePaintable(
@@ -2434,7 +2599,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_bottomLeftProperty.objectReferenceValue = filter;
-                        m_bottomLeftProperty.serializedObject.ApplyModifiedProperties();
+                        m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2442,16 +2607,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_bottomLeftProperty.objectReferenceValue = null;
-                    m_bottomLeftProperty.serializedObject.ApplyModifiedProperties();
+                    m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_bottomLeftProperty.objectReferenceValue = filter;
+                        m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleBottomLeft.style.top    = Length.Percent(75.0f);
             m_ruleBottomLeft.style.left   = Length.Percent(0.0f);
             m_ruleBottomLeft.style.width  = Length.Percent(25.0f);
             m_ruleBottomLeft.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleBottomLeft);
 
             m_ruleBottom = CreatePaintable(
@@ -2460,7 +2634,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_bottomProperty.objectReferenceValue = filter;
-                        m_bottomProperty.serializedObject.ApplyModifiedProperties();
+                        m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2468,16 +2642,25 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_bottomProperty.objectReferenceValue = null;
-                    m_bottomProperty.serializedObject.ApplyModifiedProperties();
+                    m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_bottomProperty.objectReferenceValue = filter;
+                        m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleBottom.style.top    = Length.Percent(75.0f);
             m_ruleBottom.style.left   = Length.Percent(25.0f);
             m_ruleBottom.style.width  = Length.Percent(50.0f);
             m_ruleBottom.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleBottom);
 
             m_ruleBottomRight = CreatePaintable(
@@ -2486,7 +2669,7 @@ namespace Zlitz.Extra2D.BetterTile
                     if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
                     {
                         m_bottomRightProperty.objectReferenceValue = filter;
-                        m_bottomRightProperty.serializedObject.ApplyModifiedProperties();
+                        m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                         UpdateFields();
                     }
@@ -2494,22 +2677,31 @@ namespace Zlitz.Extra2D.BetterTile
                 () =>
                 {
                     m_bottomRightProperty.objectReferenceValue = null;
-                    m_bottomRightProperty.serializedObject.ApplyModifiedProperties();
+                    m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
                     UpdateFields();
+                },
+                () =>
+                {
+                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
+                    {
+                        m_bottomRightProperty.objectReferenceValue = filter;
+                        m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                        UpdateFields();
+                    }
                 }
             );
             m_ruleBottomRight.style.top    = Length.Percent(75.0f);
             m_ruleBottomRight.style.left   = Length.Percent(75.0f);
             m_ruleBottomRight.style.width  = Length.Percent(25.0f);
             m_ruleBottomRight.style.height = Length.Percent(25.0f);
-            
             Add(m_ruleBottomRight);
 
             UpdateFields();
         }
 
-        private static VisualElement CreatePaintable(Action onPaint, Action onReset)
+        private static VisualElement CreatePaintable(Action onPaint, Action onReset, Action onHover)
         {
             VisualElement element = new VisualElement();
 
@@ -2536,6 +2728,8 @@ namespace Zlitz.Extra2D.BetterTile
                 element.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
                 element.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
                 element.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
+
+                onHover?.Invoke();
             });
             element.RegisterCallback<MouseLeaveEvent>(e =>
             {
@@ -2588,6 +2782,14 @@ namespace Zlitz.Extra2D.BetterTile
 
         private VisualElement m_weightPaintingConfig;
         private FloatField m_weight;
+
+        private bool m_painting;
+
+        public bool painting
+        {
+            get => m_painting;
+            set => m_painting = value;
+        }
 
         public float weight => m_weight.value;
 

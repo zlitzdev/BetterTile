@@ -55,43 +55,6 @@ namespace Zlitz.Extra2D.BetterTile
             return false;
         }
 
-        [Serializable]
-        internal class RuleEntry
-        {
-            [SerializeField]
-            public ConnectionRule connectionRule;
-
-            [SerializeField]
-            public List<Sprite> sprites = new List<Sprite>();
-
-            [SerializeField]
-            public List<float> weights = new List<float>();
-
-            public Sprite RandomSprite(Vector3Int position)
-            {
-                Vector3 pos = position;
-                Vector3 vec = new Vector3(12.9898f, 78.233f, -35.8033f);
-
-                float random = Mathf.Sin(Vector3.Dot(pos, vec)) * 43758.5453f;
-                random -= Mathf.Floor(random);
-
-                float totalWeight = weights.Sum();
-                random = Mathf.Clamp(random * totalWeight, 0.0f, totalWeight - 0.0001f);
-
-                float cumulativeWeight = 0.0f;
-                for (int i = 0; i < weights.Count; i++)
-                {
-                    cumulativeWeight += weights[i];
-                    if (random < cumulativeWeight)
-                    {
-                        return sprites[i];
-                    }
-                }
-
-                return null;
-            }
-        }
-
         #region ITileFilter
 
         bool ITileFilter.Match(Tile sourceTile, TileBase tile)
@@ -150,8 +113,8 @@ namespace Zlitz.Extra2D.BetterTile
             {
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    decorator?.Resolve(position + new Vector3Int(dx, dy, 0));
                     tilemap.RefreshTile(position + new Vector3Int(dx, dy, 0));
+                    decorator?.Resolve(position + new Vector3Int(dx, dy, 0));
                 }
             }
 

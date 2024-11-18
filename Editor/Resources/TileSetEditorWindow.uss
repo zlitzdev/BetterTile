@@ -11,6 +11,18 @@
     background-color: var(--bettertile-light-gray);
 }
 
+.stripe {
+    background-size: 20px 20px;
+    background-image: resource('Pattern_Stripe');
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-slice-scale: 10px;
+    -unity-slice-left: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-bottom: 0;
+    flex-basis: 0;
+}
+
 .enclosed {
     border-left-color: rgb(196, 196, 196);
     border-right-color: rgb(196, 196, 196);

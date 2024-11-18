@@ -98,35 +98,35 @@ namespace Zlitz.Extra2D.BetterTile
 
         public bool Check(ITilemap tilemap, Vector3Int position, Tile sourceTile)
         {
-            if (topLeft != null && !topLeft.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(-1, 1, 0)))) 
+            if (!MatchTile(topLeft, sourceTile, tilemap.GetTile(position + new Vector3Int(-1, 1, 0)))) 
             {
                 return false;
             }
-            if (top != null && !top.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(0, 1, 0))))
+            if (!MatchTile(top, sourceTile, tilemap.GetTile(position + new Vector3Int(0, 1, 0))))
             {
                 return false;
             }
-            if (topRight != null && !topRight.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(1, 1, 0))))
+            if (!MatchTile(topRight, sourceTile, tilemap.GetTile(position + new Vector3Int(1, 1, 0))))
             {
                 return false;
             }
-            if (left != null && !left.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(-1, 0, 0))))
+            if (!MatchTile(left, sourceTile, tilemap.GetTile(position + new Vector3Int(-1, 0, 0))))
             {
                 return false;
             }
-            if (right != null && !right.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(1, 0, 0))))
+            if (!MatchTile(right, sourceTile, tilemap.GetTile(position + new Vector3Int(1, 0, 0))))
             {
                 return false;
             }
-            if (bottomLeft != null && !bottomLeft.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(-1, -1, 0))))
+            if (!MatchTile(bottomLeft, sourceTile, tilemap.GetTile(position + new Vector3Int(-1, -1, 0))))
             {
                 return false;
             }
-            if (bottom != null && !bottom.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(0, -1, 0))))
+            if (!MatchTile(bottom, sourceTile, tilemap.GetTile(position + new Vector3Int(0, -1, 0))))
             {
                 return false;
             }
-            if (bottomRight != null && !bottomRight.Match(sourceTile, tilemap.GetTile(position + new Vector3Int(1, -1, 0))))
+            if (!MatchTile(bottomRight, sourceTile, tilemap.GetTile(position + new Vector3Int(1, -1, 0))))
             {
                 return false;
             }
@@ -148,6 +148,11 @@ namespace Zlitz.Extra2D.BetterTile
             }
 
             return lhs.IsGeneralizedOf(rhs);
+        }
+    
+        private static bool MatchTile(ITileFilter filter, Tile sourceTile, TileBase tile)
+        {
+            return filter?.Match(sourceTile, tile) ?? true;
         }
     }
 }

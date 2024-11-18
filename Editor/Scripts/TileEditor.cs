@@ -2,7 +2,7 @@ using UnityEditor;
 
 namespace Zlitz.Extra2D.BetterTile
 {
-    [CustomEditor(typeof(Tile))]
+    //[CustomEditor(typeof(Tile))]
     public class TileEditor : Editor
     {
         private SerializedProperty m_colliderTypeProperty;

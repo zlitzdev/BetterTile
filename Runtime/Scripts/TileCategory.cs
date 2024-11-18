@@ -20,13 +20,16 @@ namespace Zlitz.Extra2D.BetterTile
         [SerializeField]
         private Tile[] m_tiles;
 
+        [SerializeField]
+        private bool m_inverted;
+
         public IEnumerable<Tile> tiles => m_tiles;
 
         #region ITileFilter
 
         bool ITileFilter.Match(Tile sourceTile, TileBase tile)
         {
-            return m_tiles?.FirstOrDefault(t => t != null && t == tile);
+            return m_tiles?.FirstOrDefault(t => t != null && t == tile) != m_inverted;
         }
 
         bool ITileFilter.IsGeneralizedOf(ITileFilter other)
@@ -34,7 +37,7 @@ namespace Zlitz.Extra2D.BetterTile
             return other switch
             {
                 TileCategory category => category != null && category == this,
-                Tile         tile     => tile != null && m_tiles?.First(t => t != null && t == tile),
+                Tile         tile     => tile != null && m_tiles?.FirstOrDefault(t => t != null && t == tile) != m_inverted,
                 _                     => false
             };
         }

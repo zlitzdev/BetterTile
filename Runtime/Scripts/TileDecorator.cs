@@ -28,7 +28,7 @@ namespace Zlitz.Extra2D.BetterTile
 
         bool ITileFilter.Match(Tile sourceTile, TileBase tile)
         {
-            return tile is null;
+            return tile == null;
         }
 
         bool ITileFilter.IsGeneralizedOf(ITileFilter other)
