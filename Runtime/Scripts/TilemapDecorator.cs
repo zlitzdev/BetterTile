@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 using static UnityEngine.Tilemaps.Tilemap;
-using UnityEngine.WSA;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -27,6 +26,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         internal void Resolve(Vector3Int position)
         {
+            Init();
+
             TileBase currentTile = m_tilemap.GetTile(position);
             if (currentTile != null)
             {
@@ -68,10 +69,6 @@ namespace Zlitz.Extra2D.BetterTile
         private void Awake()
         {
             hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-
-            m_tilemap         = GetComponent<Tilemap>();
-            m_tilemapRenderer = GetComponent<TilemapRenderer>();
-
             Init();
         }
 
@@ -161,9 +158,18 @@ namespace Zlitz.Extra2D.BetterTile
             return false;
         }
 
-
         private void Init()
         {
+            if (m_tilemap == null)
+            {
+                m_tilemap = GetComponent<Tilemap>();
+            }
+
+            if (m_tilemapRenderer == null)
+            {
+                m_tilemapRenderer = GetComponent<TilemapRenderer>();
+            }
+
             if (m_decoratorTilemap == null || m_decoratorTilemapRenderer == null)
             {
                 GameObject decorator = new GameObject("Tilemap Decorator");

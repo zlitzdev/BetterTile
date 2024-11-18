@@ -21,7 +21,7 @@ A custom editor tool for Unity designed to simplify tile workflows.
 5. Paint tile: Select `Tile` brush type, then select a **Tile** from the list. Click on any sprites used for that **Tile**.
 <img src="https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Tile.png?raw=true" width="500">
 
-6. Paint rule: Seelct `Connection` brush type, then select either a **Tile** or a **Category**. Click on any connections that need to be matched with the selected **Tile**/**Cateogry**.
+6. Paint rule: Seelct `Connection` brush type, then select either a **Tile** or a **Category**. Click on any connections that need to be matched with the selected **Tile**/**Cateogry**. By default, a sprite will be overrided if a more specific rule is available. Toggle the lock icon to disable this behaviour.
 <img src="https://github.com/zlitzdev/BetterTile/blob/main/Images~/Guide_Paint_Connection.png?raw=true" width="500">
 
 7. Paint weight: Select `Weight` brush type, then enter a weight. Click on a sprite to change its weight in the sprite pool.

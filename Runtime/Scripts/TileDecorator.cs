@@ -17,7 +17,7 @@ namespace Zlitz.Extra2D.BetterTile
         #endregion
 
         [SerializeField]
-        private UnityEngine.Tilemaps.Tile[] m_tiles;
+        private DecoratorTile[] m_tiles;
 
         internal TileBase GetTile(Sprite sprite)
         {

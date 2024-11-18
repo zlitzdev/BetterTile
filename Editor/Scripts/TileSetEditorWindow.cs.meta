@@ -6,7 +6,7 @@ MonoImporter:
   defaultReferences:
   - m_ViewDataDictionary: {instanceID: 0}
   - m_visualTreeAsset: {fileID: 9197481963319205126, guid: 9a9276059fc66204ca5576ecdb7f6fdb, type: 3}
-  - m_styleSheet: {fileID: 7433441132597879392, guid: 7cf4cc425bf84c64c9da77cfd1645f0d, type: 3}
+  - m_lockIconTexture: {fileID: 2800000, guid: d2a3e9f1c16cf2647b4a440f3d1804e6, type: 3}
   - m_tileSet: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}

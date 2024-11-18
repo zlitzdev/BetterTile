@@ -11,7 +11,16 @@ namespace Zlitz.Extra2D.BetterTile
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            onTextureReimported?.Invoke();
+            foreach (string imported in importedAssets)
+            {
+                Type type = AssetDatabase.GetMainAssetTypeAtPath(imported);
+                if (typeof(Texture2D).IsAssignableFrom(type))
+                {
+                    onTextureReimported?.Invoke();
+                    return;
+                }
+            }
+
         }
     }
 }

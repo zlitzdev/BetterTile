@@ -137,8 +137,6 @@ namespace Zlitz.Extra2D.BetterTile
 
         public override void RefreshTile(Vector3Int position, ITilemap tilemap)
         {
-            base.RefreshTile(position, tilemap);
-
             Tilemap unityTileMap = GetTileMap(tilemap);
             TilemapDecorator decorator = null;
             if (unityTileMap != null)
@@ -153,10 +151,12 @@ namespace Zlitz.Extra2D.BetterTile
             {
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    tilemap.RefreshTile(position + new Vector3Int(dx, dy, 0));
                     decorator?.Resolve(position + new Vector3Int(dx, dy, 0));
+                    tilemap.RefreshTile(position + new Vector3Int(dx, dy, 0));
                 }
             }
+
+            base.RefreshTile(position, tilemap);
         }
 
         public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)

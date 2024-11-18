@@ -48,6 +48,11 @@ namespace Zlitz.Extra2D.BetterTile
 
         public ITileFilter bottomRight => m_bottomRight as ITileFilter;
 
+        [SerializeField]
+        private bool m_alwaysUsed;
+
+        public bool alwaysUsed => m_alwaysUsed;
+
         public bool IsSame(ConnectionRule other)
         {
             return IsGeneralizedOf(other) && other.IsGeneralizedOf(this);

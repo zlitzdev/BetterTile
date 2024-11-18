@@ -75,15 +75,20 @@ namespace Zlitz.Extra2D.BetterTile
                     continue;
                 }
 
-                if (currentRule.IsGeneralizedOf(spriteEntry.connectionRule))
+                bool currentRuleIsGeneralized = currentRule.IsGeneralizedOf(spriteEntry.connectionRule);
+                if (currentRuleIsGeneralized || spriteEntry.connectionRule.alwaysUsed)
                 {
-                    if (!spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
+                    if (currentRuleIsGeneralized && !spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
                     {
-                        results.Clear();
+                        results = results.Where(r => r.connectionRule.alwaysUsed).ToList();
                     }
-                    currentRule = spriteEntry.connectionRule;
 
-                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.sprite, spriteEntry.weight));
+                    if (currentRuleIsGeneralized)
+                    {
+                        currentRule = spriteEntry.connectionRule;
+                    }
+
+                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
                 }
             }
 
@@ -119,15 +124,20 @@ namespace Zlitz.Extra2D.BetterTile
                     continue;
                 }
 
-                if (currentRule.IsGeneralizedOf(spriteEntry.connectionRule))
+                bool currentRuleIsGeneralized = currentRule.IsGeneralizedOf(spriteEntry.connectionRule);
+                if (currentRuleIsGeneralized || spriteEntry.connectionRule.alwaysUsed)
                 {
-                    if (!spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
+                    if (currentRuleIsGeneralized && !spriteEntry.connectionRule.IsGeneralizedOf(currentRule))
                     {
-                        results.Clear();
+                        results = results.Where(r => r.connectionRule.alwaysUsed).ToList();
                     }
-                    currentRule = spriteEntry.connectionRule;
 
-                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.sprite, spriteEntry.weight));
+                    if (currentRuleIsGeneralized)
+                    {
+                        currentRule = spriteEntry.connectionRule;
+                    }
+
+                    results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
                 }
             }
 
@@ -165,13 +175,17 @@ namespace Zlitz.Extra2D.BetterTile
         {
             public Tile ruleProvider { get; private set; }
 
+            public ConnectionRule connectionRule { get; private set; }
+
             public float weight { get; private set; }
 
             public Sprite sprite { get; private set; }
 
-            public SpriteOutput(Tile ruleProvider, Sprite sprite, float weight)
+            public SpriteOutput(Tile ruleProvider, ConnectionRule connectionRule, Sprite sprite, float weight)
             {
                 this.ruleProvider = ruleProvider;
+
+                this.connectionRule = connectionRule;
 
                 this.weight = weight;
                 this.sprite = sprite;

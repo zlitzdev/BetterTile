@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -10,6 +9,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
 using ColliderType = UnityEngine.Tilemaps.Tile.ColliderType;
+using System.Xml.Linq;
 
 namespace Zlitz.Extra2D.BetterTile 
 {
@@ -17,6 +17,9 @@ namespace Zlitz.Extra2D.BetterTile
     {
         [SerializeField]
         private VisualTreeAsset m_visualTreeAsset = default;
+
+        [SerializeField]
+        private Texture2D m_lockIconTexture = default;
 
         [SerializeField, HideInInspector]
         private TileSet m_tileSet;
@@ -407,6 +410,7 @@ namespace Zlitz.Extra2D.BetterTile
             m_textureSetDisplay = uxml.Q<TextureSetDisplay>(name: "texture-set-display");
             m_textureSetDisplay.onNewTextureAdded += UpdateTextureSetDisplay;
             m_textureSetDisplay.paintControl = m_paintControl;
+            m_textureSetDisplay.lockIconTexture = m_lockIconTexture;
             m_paintControl.onBrushTypeChanged += m_textureSetDisplay.OnBrushTypeChanged;
 
             // Update UI for current tile set
@@ -794,8 +798,9 @@ namespace Zlitz.Extra2D.BetterTile
                 }
                 newName = ObjectNames.GetUniqueName(tileSet.categories.Where(c => index < categories.Count && c != m_category).Select(c => c.name).ToArray(), newName);
                 m_category.name = newName;
+                
                 EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_category);
 
                 m_name.text = newName;
 
@@ -978,8 +983,9 @@ namespace Zlitz.Extra2D.BetterTile
                 }
                 newName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => index < tiles.Count && t != m_tile).Select(c => c.name).ToArray(), newName);
                 m_tile.name = newName;
+
                 EditorUtility.SetDirty(m_tile);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(m_tile);
 
                 m_name.text = newName;
                 onNameChanged?.Invoke();
@@ -1213,6 +1219,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         private List<TextureDisplay> m_elements = new List<TextureDisplay>();
 
+        private Texture2D m_lockIconTexture;
+
         private Label m_message;
 
         private PaintControl m_paintControl;
@@ -1243,6 +1251,19 @@ namespace Zlitz.Extra2D.BetterTile
         {
             get => m_paintControl;
             set => m_paintControl = value;
+        }
+
+        public Texture2D lockIconTexture
+        {
+            get => m_lockIconTexture;
+            set
+            {
+                m_lockIconTexture = value;
+                foreach (TextureDisplay textureDisplay in m_elements)
+                {
+                    textureDisplay.lockIconTexture = m_lockIconTexture;
+                }
+            }
         }
 
         public void UpdateFields()
@@ -1447,6 +1468,7 @@ namespace Zlitz.Extra2D.BetterTile
                             };
                         }, UpdateElements, m_scale, m_spriteEntriesProperty);
                         newElemenet.paintControl = m_paintControl;
+                        newElemenet.lockIconTexture = m_lockIconTexture;
                         Add(newElemenet);
                         m_elements.Add(newElemenet);
                     }
@@ -1560,6 +1582,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         private List<SpriteDisplay> m_elements = new List<SpriteDisplay>();
 
+        private Texture2D m_lockIconTexture;
+
         public event Action<float> onScale;
 
         public PaintControl paintControl
@@ -1571,6 +1595,19 @@ namespace Zlitz.Extra2D.BetterTile
                 foreach (SpriteDisplay spriteDisplay in m_elements)
                 {
                     spriteDisplay.paintControl = m_paintControl;
+                }
+            }
+        }
+
+        public Texture2D lockIconTexture
+        {
+            get => m_lockIconTexture;
+            set
+            {
+                m_lockIconTexture = value;
+                foreach (SpriteDisplay spriteDisplay in m_elements)
+                {
+                    spriteDisplay.lockIconTexture = m_lockIconTexture;
                 }
             }
         }
@@ -1707,6 +1744,7 @@ namespace Zlitz.Extra2D.BetterTile
                 Debug.Assert(matchingSpriteEntryProperty != null, "No matching sprite entry available.");
 
                 SpriteDisplay spriteDisplay = new SpriteDisplay(sprite, this, m_scale, matchingSpriteEntryProperty, m_paintControl);
+                spriteDisplay.lockIconTexture = m_lockIconTexture;
                 tex.Add(spriteDisplay);
                 m_elements.Add(spriteDisplay);
             }
@@ -1735,6 +1773,8 @@ namespace Zlitz.Extra2D.BetterTile
         private SerializedProperty m_ruleProperty;
         private SerializedProperty m_weightProperty;
 
+        private Texture2D m_lockIconTexture;
+
         public PaintControl paintControl
         {
             get => m_paintControl;
@@ -1746,6 +1786,16 @@ namespace Zlitz.Extra2D.BetterTile
                     OnBrushTypeChanged(paintControl.brushType);
                 }
                 m_ruleDisplay.paintControl = m_paintControl;
+            }
+        }
+
+        public Texture2D lockIconTexture
+        {
+            get => m_lockIconTexture;
+            set
+            {
+                m_lockIconTexture = value;
+                m_ruleDisplay.lockIconTexture = m_lockIconTexture;
             }
         }
 
@@ -1859,7 +1909,7 @@ namespace Zlitz.Extra2D.BetterTile
             });
             m_tilePainting.RegisterCallback<MouseDownEvent>(e =>
             {
-                if (e.button == 0)
+                if (e.button == 0 && !e.shiftKey)
                 {
                     if (m_paintControl != null && m_paintControl.paintingTile != null && m_paintControl.paintingTile is UnityEngine.Object tile)
                     {
@@ -1874,11 +1924,9 @@ namespace Zlitz.Extra2D.BetterTile
                             {
                                 Sprite decoratorSprite = m_spriteProperty.objectReferenceValue as Sprite;
 
-                                UnityEngine.Tilemaps.Tile decoratorTile = ScriptableObject.CreateInstance<UnityEngine.Tilemaps.Tile>();
+                                DecoratorTile decoratorTile = DecoratorTile.Create(decoratorSprite);
                                 decoratorTile.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
                                 decoratorTile.name = $"Decorator_{decoratorSprite.name}";
-                                decoratorTile.sprite = decoratorSprite;
-                                decoratorTile.colliderType = ColliderType.None;
 
                                 AssetDatabase.AddObjectToAsset(decoratorTile, decorator);
 
@@ -1900,7 +1948,7 @@ namespace Zlitz.Extra2D.BetterTile
                         }
                     }
                 }
-                else if (e.button == 1)
+                else if (e.button == 0 && e.shiftKey)
                 {
                     TileDecorator decorator = m_tileProperty.objectReferenceValue as TileDecorator;
 
@@ -1918,11 +1966,11 @@ namespace Zlitz.Extra2D.BetterTile
                         SerializedProperty tilesProperty = serializedDecorator.FindProperty("m_tiles");
 
                         int index = -1;
-                        UnityEngine.Tilemaps.Tile tileToRemove = null;
+                        DecoratorTile tileToRemove = null;
                         for (int i = 0; i < tilesProperty.arraySize; i++)
                         {
                             SerializedProperty tileProperty = tilesProperty.GetArrayElementAtIndex(i);
-                            UnityEngine.Tilemaps.Tile tile = tileProperty.objectReferenceValue as UnityEngine.Tilemaps.Tile;
+                            DecoratorTile tile = tileProperty.objectReferenceValue as DecoratorTile;
                             if (tile != null && tile.sprite == decoratorSprite)
                             {
                                 index = i;
@@ -1955,6 +2003,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             m_ruleDisplay = new RuleDisplay(m_ruleProperty, m_tileProperty, m_paintControl);
             m_ruleDisplay.style.flexGrow = 1.0f;
+            m_ruleDisplay.lockIconTexture = m_lockIconTexture;
             m_connectionPainting.Add(m_ruleDisplay);
 
             m_tileOutline.Add(m_connectionPainting);
@@ -2045,8 +2094,10 @@ namespace Zlitz.Extra2D.BetterTile
         private SerializedProperty m_bottomLeftProperty;
         private SerializedProperty m_bottomProperty;
         private SerializedProperty m_bottomRightProperty;
+        private SerializedProperty m_alwaysUsedProperty;
 
         private VisualElement m_tile;
+        private VisualElement m_lock;
 
         private VisualElement m_ruleTopLeft;
         private VisualElement m_ruleTop;
@@ -2057,10 +2108,22 @@ namespace Zlitz.Extra2D.BetterTile
         private VisualElement m_ruleBottom;
         private VisualElement m_ruleBottomRight;
 
+        private Texture2D m_lockIconTexture;
+
         public PaintControl paintControl
         {
             get => m_paintControl;
             set => m_paintControl = value;
+        }
+
+        public Texture2D lockIconTexture
+        {
+            get => m_lockIconTexture;
+            set
+            {
+                m_lockIconTexture = value;
+                m_lock.style.backgroundImage = m_lockIconTexture;
+            }
         }
 
         public void UpdateFields()
@@ -2075,6 +2138,18 @@ namespace Zlitz.Extra2D.BetterTile
             }
 
             m_tile.style.backgroundColor = tileColor;
+
+            m_lock.style.backgroundImage = m_lockIconTexture;
+            m_lock.style.unityBackgroundImageTintColor = new Color(
+                tileColor.r < 0.5f ? 1.0f : 0.0f,
+                tileColor.g < 0.5f ? 1.0f : 0.0f,
+                tileColor.b < 0.5f ? 1.0f : 0.0f, 
+                m_alwaysUsedProperty.boolValue ? 0.6f : 0.0f
+            );
+
+            m_lock.tooltip = m_alwaysUsedProperty.boolValue
+                ? "This sprite will always be added to the sprite pool, even if there's a more specific rule."
+                : "This sprite might not be used if there's a more specific rule.";
 
             Color ruleFilterColor;
 
@@ -2158,6 +2233,7 @@ namespace Zlitz.Extra2D.BetterTile
             m_bottomLeftProperty  = m_ruleProperty.FindPropertyRelative("m_bottomLeft");
             m_bottomProperty      = m_ruleProperty.FindPropertyRelative("m_bottom");
             m_bottomRightProperty = m_ruleProperty.FindPropertyRelative("m_bottomRight");
+            m_alwaysUsedProperty  = m_ruleProperty.FindPropertyRelative("m_alwaysUsed");
 
             m_tile = new VisualElement();
             m_tile.style.position        = Position.Absolute;
@@ -2167,6 +2243,61 @@ namespace Zlitz.Extra2D.BetterTile
             m_tile.style.height          = Length.Percent(50.0f);
             
             Add(m_tile);
+
+            m_lock = new VisualElement();
+
+            m_lock.style.position = Position.Absolute;
+            m_lock.style.bottom   = 0.0f;
+            m_lock.style.right    = 0.0f;
+            m_lock.style.width    = Length.Percent(35.0f);
+            m_lock.style.height   = Length.Percent(35.0f);
+
+            m_lock.style.borderBottomWidth = 1.0f;
+            m_lock.style.borderTopWidth    = 1.0f;
+            m_lock.style.borderLeftWidth   = 1.0f;
+            m_lock.style.borderRightWidth  = 1.0f;
+
+            m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+            m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+            m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+            m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+
+            m_lock.RegisterCallback<MouseEnterEvent>(e =>
+            {
+                m_lock.style.borderBottomWidth = 2.0f;
+                m_lock.style.borderTopWidth    = 2.0f;
+                m_lock.style.borderLeftWidth   = 2.0f;
+                m_lock.style.borderRightWidth  = 2.0f;
+
+                m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 1.0f);
+                m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
+                m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
+                m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
+            });
+            m_lock.RegisterCallback<MouseLeaveEvent>(e =>
+            {
+                m_lock.style.borderBottomWidth = 1.0f;
+                m_lock.style.borderTopWidth    = 1.0f;
+                m_lock.style.borderLeftWidth   = 1.0f;
+                m_lock.style.borderRightWidth  = 1.0f;
+
+                m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+                m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+                m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+                m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
+            });
+            m_lock.RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == 0)
+                {
+                    m_alwaysUsedProperty.boolValue = !m_alwaysUsedProperty.boolValue;
+                    m_alwaysUsedProperty.serializedObject.ApplyModifiedProperties();
+
+                    UpdateFields();
+                }
+            });
+
+            m_tile.Add(m_lock);
 
             m_ruleTopLeft = CreatePaintable(
                 () =>
@@ -2421,11 +2552,11 @@ namespace Zlitz.Extra2D.BetterTile
             });
             element.RegisterCallback<MouseDownEvent>(e =>
             {
-                if (e.button == 0)
+                if (e.button == 0 && !e.shiftKey)
                 {
                     onPaint?.Invoke();
                 }
-                else if (e.button == 1)
+                else if (e.button == 0 && e.shiftKey)
                 {
                     onReset?.Invoke();
                 }
