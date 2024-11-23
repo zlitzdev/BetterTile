@@ -18,10 +18,7 @@ namespace Zlitz.Extra2D.BetterTile
         private Tilemap         m_tilemap;
         private TilemapRenderer m_tilemapRenderer;
 
-        [SerializeField]
         private Tilemap m_decoratorTilemap;
-
-        [SerializeField]
         private TilemapRenderer m_decoratorTilemapRenderer;
 
         internal void Resolve(Vector3Int position)
@@ -180,7 +177,7 @@ namespace Zlitz.Extra2D.BetterTile
             if (m_decoratorTilemap == null || m_decoratorTilemapRenderer == null)
             {
                 GameObject decorator = new GameObject("Tilemap Decorator");
-                decorator.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                decorator.hideFlags = HideFlags.HideAndDontSave;
 
                 decorator.transform.parent = transform;
 
