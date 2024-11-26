@@ -65,7 +65,7 @@ namespace Zlitz.Extra2D.BetterTile
 
         private void Awake()
         {
-            hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+            hideFlags = HideFlags.HideAndDontSave | HideFlags.HideInInspector;
             Init();
         }
 
@@ -177,7 +177,7 @@ namespace Zlitz.Extra2D.BetterTile
             if (m_decoratorTilemap == null || m_decoratorTilemapRenderer == null)
             {
                 GameObject decorator = new GameObject("Tilemap Decorator");
-                decorator.hideFlags = HideFlags.HideAndDontSave;
+                decorator.hideFlags = HideFlags.HideAndDontSave | HideFlags.HideInInspector;
 
                 decorator.transform.parent = transform;
 
