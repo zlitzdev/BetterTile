@@ -6,8 +6,6 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-using static UnityEngine.Tilemaps.Tilemap;
-
 namespace Zlitz.Extra2D.BetterTile
 {
     [RequireComponent(typeof(Tilemap))]
@@ -15,11 +13,35 @@ namespace Zlitz.Extra2D.BetterTile
     [ExecuteAlways]
     public class TilemapDecorator : MonoBehaviour
     {
-        private Tilemap         m_tilemap;
+        [SerializeField]
+        private GameObject m_tilemapObject;
+
+        private Tilemap m_tilemap;
         private TilemapRenderer m_tilemapRenderer;
 
         private Tilemap m_decoratorTilemap;
         private TilemapRenderer m_decoratorTilemapRenderer;
+
+        private GameObject tilemapObject
+        {
+            get
+            {
+                if (m_tilemapObject == null)
+                {
+                    m_tilemapObject = new GameObject("Tilemap Decorator");
+                    m_tilemapObject.hideFlags = HideFlags.HideAndDontSave | HideFlags.HideInInspector;
+
+                    m_tilemapObject.transform.parent = transform;
+
+                    m_decoratorTilemap = m_tilemapObject.AddComponent<Tilemap>();
+                    CopyTilemap(m_decoratorTilemap, m_tilemap);
+
+                    m_decoratorTilemapRenderer = m_tilemapObject.AddComponent<TilemapRenderer>();
+                    CopyTilemapRenderer(m_decoratorTilemapRenderer, m_tilemapRenderer);
+                }
+                return m_tilemapObject;
+            }
+        }
 
         internal void Resolve(Vector3Int position)
         {
@@ -91,9 +113,11 @@ namespace Zlitz.Extra2D.BetterTile
         {
             CopyTilemap(m_decoratorTilemap, m_tilemap);
             CopyTilemapRenderer(m_decoratorTilemapRenderer, m_tilemapRenderer);
+
+            m_tilemapObject.hideFlags = HideFlags.HideAndDontSave | HideFlags.HideInHierarchy;
         }
 
-        private void OnTileChanged(Tilemap tilemap, SyncTile[] tiles)
+        private void OnTileChanged(Tilemap tilemap, Tilemap.SyncTile[] tiles)
         {
             if (tilemap != m_tilemap)
             {
@@ -105,7 +129,7 @@ namespace Zlitz.Extra2D.BetterTile
                 decorator = tilemap.gameObject.AddComponent<TilemapDecorator>();
             }
 
-            foreach (SyncTile syncTile in tiles)
+            foreach (Tilemap.SyncTile syncTile in tiles)
             {
                 Resolve(syncTile.position);
             }
@@ -174,18 +198,14 @@ namespace Zlitz.Extra2D.BetterTile
                 m_tilemapRenderer = GetComponent<TilemapRenderer>();
             }
 
-            if (m_decoratorTilemap == null || m_decoratorTilemapRenderer == null)
+            if (m_decoratorTilemap == null)
             {
-                GameObject decorator = new GameObject("Tilemap Decorator");
-                decorator.hideFlags = HideFlags.HideAndDontSave | HideFlags.HideInInspector;
+                m_decoratorTilemap = tilemapObject.GetComponent<Tilemap>();
+            }
 
-                decorator.transform.parent = transform;
-
-                m_decoratorTilemap = decorator.AddComponent<Tilemap>();
-                CopyTilemap(m_decoratorTilemap, m_tilemap);
-
-                m_decoratorTilemapRenderer = decorator.AddComponent<TilemapRenderer>();
-                CopyTilemapRenderer(m_decoratorTilemapRenderer, m_tilemapRenderer);
+            if (m_decoratorTilemapRenderer == null)
+            {
+                m_decoratorTilemapRenderer = tilemapObject.GetComponent<TilemapRenderer>();
             }
         }
 
