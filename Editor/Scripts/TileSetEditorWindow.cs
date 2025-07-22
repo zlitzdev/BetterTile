@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -8,2889 +9,2234 @@ using UnityEditor.Callbacks;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-using ColliderType = UnityEngine.Tilemaps.Tile.ColliderType;
-using System.Reflection;
+using UnityTile   = UnityEngine.Tilemaps.Tile;
+using UnityObject = UnityEngine.Object;
 
-namespace Zlitz.Extra2D.BetterTile 
+namespace Zlitz.Extra2D.BetterTile
 {
-    public class TileSetEditorWindow : EditorWindow
+    internal class TileSetEditorWindow : EditorWindow
     {
-        [SerializeField]
-        private VisualTreeAsset m_visualTreeAsset = default;
+        #region Opening
 
-        [SerializeField]
-        private Texture2D m_lockIconTexture = default;
-
-        [SerializeField, HideInInspector]
-        private TileSet m_tileSet;
-
-        private ObjectField m_tileSetReference;
-
-        private ListView           m_categoriesListView;
-        private List<TileCategory> m_categories;
-        
-        private ListView   m_tilesListView;
-        private List<Tile> m_tiles;
-
-        private ListView            m_othersListView;
-        private List<MiscPaintable> m_others;
-
-        private TextureSetDisplay m_textureSetDisplay;
-
-        private PaintControl m_paintControl;
-
-        public static void Open(TileSet tileSet)
+        [MenuItem("Window/Zlitz/Tile Set Editor")]
+        private static void Open()
         {
-            TileSetEditorWindow wnd = GetWindow<TileSetEditorWindow>();
-            wnd.titleContent = new GUIContent("Tile Set Editor");
+            Open(null);
+        }
 
-            wnd.m_tileSet = tileSet;
-            wnd.UpdateUI();
+        internal static void Open(TileSet tileSet)
+        {
+            TileSetEditorWindow window = GetWindow<TileSetEditorWindow>();
+            window.titleContent = new GUIContent("Tile Set Editor");
+            window.saveChangesMessage = "There are unsaved changes. Would you like to save?";
+
+            if (window.m_tileSet != tileSet)
+            {
+                if (window.hasUnsavedChanges)
+                {
+                    int option = EditorUtility.DisplayDialogComplex(
+                    "Tile Set Editor - Unsaved Changes Detected",
+                    window.saveChangesMessage,
+                    "Save",
+                    "Discard",
+                    "Cancel"
+                );
+
+                    switch (option)
+                    {
+                        case 0:
+                            {
+                                window.SaveChanges();
+
+                                window.m_tileSet = tileSet;
+                                window.OnTileSetChanged();
+
+                                window.hasUnsavedChanges = false;
+                                break;
+                            }
+                        case 1:
+                            {
+                                window.DiscardChanges();
+
+                                window.m_tileSet = tileSet;
+                                window.OnTileSetChanged();
+
+                                window.hasUnsavedChanges = false;
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                    }
+                }
+                else
+                {
+                    window.m_tileSet = tileSet;
+                    window.OnTileSetChanged();
+                }
+            }
         }
 
         [OnOpenAsset]
-        private static bool OpenTileSet(int instanceID)
+        private static bool OpenTileSetAsset(int instanceID, int line)
         {
-            UnityEngine.Object asset = EditorUtility.InstanceIDToObject(instanceID);
-            if (asset is TileSet tileSet)
+            UnityObject obj = EditorUtility.InstanceIDToObject(instanceID);
+            
+            if (obj is TileSet tileSet)
             {
                 Open(tileSet);
                 return true;
             }
+            if (obj is Tile tile)
+            {
+                TileSet parentTileSet = new SerializedObject(tile).FindProperty("m_tileSet").objectReferenceValue as TileSet;
+                if (parentTileSet != null)
+                {
+                    Open(parentTileSet);
+                    return true;
+                }
+            }
+
             return false;
         }
 
-        public void CreateGUI()
+        #endregion
+
+        #region Handle Changes
+
+        private Action m_onSaved;
+
+        private static MethodInfo s_initializeMethod;
+
+        public override void SaveChanges()
         {
-            VisualElement root = rootVisualElement;
-            root.Clear();
+            m_serializedTileSet.SaveChanges();
+            m_onSaved?.Invoke();
 
-            VisualElement uxml = m_visualTreeAsset.Instantiate();
-            uxml.style.flexGrow = 1.0f;
-            root.Add(uxml);
-
-            // Display a read-only reference to the current tile set
-
-            m_tileSetReference = uxml.Q<ObjectField>(name: "tileset");
-            m_tileSetReference.SetEnabled(false);
-
-            // Setup categories list view
-
-            m_categoriesListView = uxml.Q<ListView>(name: "categories");
-            Toggle categoriesFoldoutToggle = m_categoriesListView.Q<Toggle>();
-            categoriesFoldoutToggle.value = EditorPrefs.GetBool("Zlitz.Extra2D.BetterTile.categoriesFoldout", false);
-            categoriesFoldoutToggle.RegisterValueChangedCallback(e => EditorPrefs.SetBool("Zlitz.Extra2D.BetterTile.categoriesFoldout", e.newValue));
-
-            m_categoriesListView.itemIndexChanged += (s, e) =>
-            {
-                if (s == e)
-                {
-                    return;
-                }
-
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty categoriesProperty = serializedTileSet.FindProperty("m_categories");
-                categoriesProperty.MoveArrayElement(s, e);
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_paintControl.Rebuild();
-            };
-
-            m_categoriesListView.itemsAdded += (indices) =>
-            {
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty categoriesProperty = serializedTileSet.FindProperty("m_categories");
-
-                indices = indices.OrderBy(i => i);
-                foreach (int index in indices)
-                {
-                    TileCategory newCategory = CreateInstance<TileCategory>();
-                    newCategory.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector | HideFlags.HideInHierarchy;
-
-                    string newName = "New Category";
-                    if (m_tileSet.categories != null)
-                    {
-                        newName = ObjectNames.GetUniqueName(m_tileSet.categories.Where(c => c != null).Select(c => c.name).ToArray(), newName);
-                    }
-                    newCategory.name = newName;
-
-                    AssetDatabase.AddObjectToAsset(newCategory, m_tileSet);
-                    EditorUtility.SetDirty(m_tileSet);
-                    AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                    categoriesProperty.InsertArrayElementAtIndex(index);
-                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-
-                    SerializedProperty newCategoryProperty = categoriesProperty.GetArrayElementAtIndex(index);
-                    newCategoryProperty.objectReferenceValue = newCategory;
-
-                    m_categories[index] = newCategory;
-
-                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                }
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_paintControl.Rebuild();
-            };
-
-            m_categoriesListView.itemsRemoved += (indices) =>
-            {
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty categoriesProperty = serializedTileSet.FindProperty("m_categories");
-
-                indices = indices.OrderByDescending(i => i);
-                foreach (int i in indices)
-                {
-                    SerializedProperty currentCategoryProperty = categoriesProperty.GetArrayElementAtIndex(i);
-
-                    TileCategory category = currentCategoryProperty.objectReferenceValue as TileCategory;
-                    if (category != null)
-                    {
-                        AssetDatabase.RemoveObjectFromAsset(category);
-                        DestroyImmediate(category, true);
-                    }
-
-                    categoriesProperty.DeleteArrayElementAtIndex(i);
-                }
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_paintControl.Rebuild();
-            };
-
-            m_categoriesListView.selectionChanged += (objects) =>
-            {
-                TileCategory selected = objects.OfType<TileCategory>().FirstOrDefault(c => c != null);
-                m_paintControl.SelectFilter(selected);
-            };
-
-            m_categoriesListView.RegisterCallback<FocusOutEvent>(e =>
-            {
-                m_categoriesListView.SetSelectionWithoutNotify(new int[] { });
-            });
-
-            m_categoriesListView.RegisterCallback<KeyDownEvent>(e =>
-            {
-                if (e.keyCode == KeyCode.Delete)
-                {
-                    int index = m_categoriesListView.selectedIndex;
-                    if (index >= 0 && index < m_categories.Count)
-                    {
-                        SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                        SerializedProperty categoriesProperty = serializedTileSet.FindProperty("m_categories");
-
-                        SerializedProperty currentCategoryProperty = categoriesProperty.GetArrayElementAtIndex(index);
-
-                        TileCategory category = currentCategoryProperty.objectReferenceValue as TileCategory;
-                        if (category != null)
-                        {
-                            AssetDatabase.RemoveObjectFromAsset(category);
-                            DestroyImmediate(category, true);
-                        }
-
-                        categoriesProperty.DeleteArrayElementAtIndex(index);
-
-                        serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                        EditorUtility.SetDirty(m_tileSet);
-                        AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                        UpdateCategories();
-
-                        m_paintControl.Rebuild();
-                    }
-                }
-            });
-
-            // Setup tiles list view
-
-            m_tilesListView = uxml.Q<ListView>(name: "tiles"); 
-            Toggle tilesFoldoutToggle = m_tilesListView.Q<Toggle>();
-            tilesFoldoutToggle.value = EditorPrefs.GetBool("Zlitz.Extra2D.BetterTile.tilesFoldout", false);
-            tilesFoldoutToggle.RegisterValueChangedCallback(e => EditorPrefs.SetBool("Zlitz.Extra2D.BetterTile.tilesFoldout", e.newValue));
-
-            m_tilesListView.itemIndexChanged += (s, e) =>
-            {
-                if (s == e)
-                {
-                    return;
-                }
-
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty tilesProperty = serializedTileSet.FindProperty("m_tiles");
-                tilesProperty.MoveArrayElement(s, e);
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_categoriesListView.RefreshItems();
-                m_paintControl.Rebuild();
-            };
-
-            m_tilesListView.itemsAdded += (indices) =>
-            {
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty tilesProperty = serializedTileSet.FindProperty("m_tiles");
-
-                indices = indices.OrderBy(i => i);
-                foreach (int index in indices)
-                {
-                    Tile newTile = CreateInstance<Tile>();
-                    newTile.hideFlags = HideFlags.NotEditable;
-
-                    string newName = "New Tile";
-                    if (m_tileSet.tiles != null)
-                    {
-                        newName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => t != null).Select(t => t.name).ToArray(), newName);
-                    }
-                    newTile.name = newName;
-
-                    AssetDatabase.AddObjectToAsset(newTile, m_tileSet);
-                    EditorUtility.SetDirty(m_tileSet);
-                    AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                    tilesProperty.InsertArrayElementAtIndex(index);
-                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-
-                    SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
-                    newTileProperty.objectReferenceValue = newTile;
-
-                    m_tiles[index] = newTile;
-
-                    SerializedObject newSerializedTile = new SerializedObject(newTile);
-                    newSerializedTile.Update();
-
-                    SerializedProperty tileSetProperty = newSerializedTile.FindProperty("m_tileSet");
-                    tileSetProperty.objectReferenceValue = m_tileSet;
-                    newSerializedTile.ApplyModifiedPropertiesWithoutUndo();
-
-                    serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                }
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_categoriesListView.RefreshItems();
-                m_paintControl.Rebuild();
-            };
-
-            m_tilesListView.itemsRemoved += (indices) =>
-            {
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                SerializedProperty tilesProperty = serializedTileSet.FindProperty("m_tiles");
-
-                indices = indices.OrderByDescending(i => i);
-                foreach (int i in indices)
-                {
-                    SerializedProperty currentTileProperty = tilesProperty.GetArrayElementAtIndex(i);
-
-                    Tile tile = currentTileProperty.objectReferenceValue as Tile;
-                    if (tile != null)
-                    {
-                        AssetDatabase.RemoveObjectFromAsset(tile);
-                        DestroyImmediate(tile, true);
-                    }
-
-                    tilesProperty.DeleteArrayElementAtIndex(i);
-                }
-
-                serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_tileSet);
-                AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                m_categoriesListView.RefreshItems();
-                m_paintControl.Rebuild();
-            };
-
-            m_tilesListView.selectionChanged += (objects) =>
-            {
-                Tile selected = objects.OfType<Tile>().FirstOrDefault(t => t != null);
-                m_paintControl.SelectTile(selected);
-                m_paintControl.SelectFilter(selected);
-            };
-
-            m_tilesListView.RegisterCallback<FocusOutEvent>(e =>
-            {
-                m_tilesListView.SetSelectionWithoutNotify(new int[] { });
-            });
-
-            m_tilesListView.RegisterCallback<KeyDownEvent>(e =>
-            {
-                if (e.keyCode == KeyCode.Delete)
-                {
-                    int index = m_tilesListView.selectedIndex;
-                    if (index >= 0 && index < m_tiles.Count)
-                    {
-                        SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-
-                        SerializedProperty tilesProperty = serializedTileSet.FindProperty("m_tiles");
-
-                        SerializedProperty currentTileProperty = tilesProperty.GetArrayElementAtIndex(index);
-
-                        Tile tile = currentTileProperty.objectReferenceValue as Tile;
-                        if (tile != null)
-                        {
-                            AssetDatabase.RemoveObjectFromAsset(tile);
-                            DestroyImmediate(tile, true);
-                        }
-
-                        tilesProperty.DeleteArrayElementAtIndex(index);
-
-                        serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                        EditorUtility.SetDirty(m_tileSet);
-                        AssetDatabase.SaveAssetIfDirty(m_tileSet);
-
-                        UpdateTiles();
-
-                        m_categoriesListView.RefreshItems();
-                        m_paintControl.Rebuild();
-                    }
-                }
-            });
-
-            // Setup others list view
-
-            m_othersListView = uxml.Q<ListView>(name: "others");
-            Toggle othersFoldoutToggle = m_tilesListView.Q<Toggle>();
-            othersFoldoutToggle.value = EditorPrefs.GetBool("Zlitz.Extra2D.BetterTile.othersFoldout", false);
-            othersFoldoutToggle.RegisterValueChangedCallback(e => EditorPrefs.SetBool("Zlitz.Extra2D.BetterTile.othersFoldout", e.newValue));
-
-            m_othersListView.selectionChanged += (objects) =>
-            {
-                MiscPaintable paintable = objects.OfType<MiscPaintable>().FirstOrDefault();
-
-                SerializedObject serializedTileSet = new SerializedObject(m_tileSet);
-                
-                UnityEngine.Object target = null;
-
-                switch (paintable)
-                {
-                    case MiscPaintable.Self:
-                        {
-                            target = serializedTileSet.FindProperty("m_selfFilter").objectReferenceValue;
-                            break;
-                        }
-                    case MiscPaintable.Decorator:
-                        {
-                            target = serializedTileSet.FindProperty("m_decorator").objectReferenceValue;
-                            break;
-                        }
-                }
-
-                m_paintControl.SelectTile(target as ITileIdentifier);
-                m_paintControl.SelectFilter(target as ITileFilter);
-            };
-
-            // Setup paint control
-
-            m_paintControl = uxml.Q<PaintControl>(name: "paint-control");
-
-            string brushTypeStr = EditorPrefs.GetString("Zlitz.Extra2D.BetterTile.paintControlBrushType", "");
-            if (!Enum.TryParse(brushTypeStr, out PaintControl.BrushType brushType))
-            {
-                brushType = PaintControl.BrushType.Tile;
-            }
-            m_paintControl.brushType = brushType;
-
-            m_paintControl.onBrushTypeChanged += b =>
-            {
-                EditorPrefs.SetString("Zlitz.Extra2D.BetterTile.paintControlBrushType", b.ToString());
-            };
-
-            // Setup texture set display
-
-            m_textureSetDisplay = uxml.Q<TextureSetDisplay>(name: "texture-set-display");
-            m_textureSetDisplay.onNewTextureAdded += UpdateTextureSetDisplay;
-            m_textureSetDisplay.paintControl = m_paintControl;
-            m_textureSetDisplay.lockIconTexture = m_lockIconTexture;
-            m_paintControl.onBrushTypeChanged += m_textureSetDisplay.OnBrushTypeChanged;
-
-            // Update UI for current tile set
+            hasUnsavedChanges = false;
 
             if (m_tileSet != null)
             {
-                UpdateUI();
+                if (s_initializeMethod == null)
+                {
+                    s_initializeMethod = typeof(TileSet).GetMethod("Initialize", BindingFlags.Instance | BindingFlags.NonPublic);
+                }
+                s_initializeMethod?.Invoke(m_tileSet, new object[0]);
             }
         }
 
+        #endregion
+
+        #region GUI
+
+        private Action m_onUpdate;
+
         private void OnEnable()
         {
-            TileSetTexturePostprocessor.onTextureReimported += OnTextureReimported;
+            TileSetValidator.onTileSetValidated += OnTileSetValidated;
         }
 
         private void OnDisable()
         {
-            TileSetTexturePostprocessor.onTextureReimported -= OnTextureReimported;
+            TileSetValidator.onTileSetValidated -= OnTileSetValidated;
         }
 
-        private void OnTextureReimported()
+        private void OnGUI()
         {
-            EditorApplication.delayCall += UpdateUI;
-        }
+            m_onUpdate?.Invoke();
 
-        private void UpdateUI()
-        {
-            m_tileSetReference.value = m_tileSet;
-
-            UpdateCategories();
-            UpdateTiles();
-            UpdateOthers();
-            UpdateTextureSetDisplay();
-        }
-
-        private void UpdateCategories()
-        {
-            m_categoriesListView.Clear();
-
-            m_categories = m_tileSet.categories.ToList();
-            m_categoriesListView.itemsSource = m_categories;
-
-            m_categoriesListView.makeItem = () => new TileCategoryItem();
-
-            m_categoriesListView.bindItem = (e, i) => (e as TileCategoryItem)?.Bind(m_tileSet, m_categories, i, 
-                () =>
-                {
-                    m_paintControl.Rebuild();
-                    m_categoriesListView.RefreshItems();
-                },
-                () =>
-                {
-                    m_textureSetDisplay.UpdateFields();
-                }
-            );
-        }
-
-        private void UpdateTiles()
-        {
-            m_tilesListView.Clear();
-
-            m_tiles = m_tileSet.tiles.ToList();
-            m_tilesListView.itemsSource = m_tiles;
-
-            m_tilesListView.makeItem = () => new TileItem(m_tileSet);
-
-            m_tilesListView.bindItem = (e, i) => (e as TileItem)?.Bind(m_tileSet, m_tiles, i, 
-                () => 
-                {
-                    m_paintControl.Rebuild();
-
-                    m_tilesListView.RefreshItems(); 
-                    m_categoriesListView.RefreshItems(); 
-                },
-                () =>
-                {
-                    m_textureSetDisplay?.UpdateFields();
-                },
-                () =>
-                {
-                    UpdateTiles();
-                }
-            );
-        }
-    
-        private void UpdateOthers()
-        {
-            m_othersListView.Clear();
-
-            m_others = ValidateOtherPaintables(m_others);
-
-            m_othersListView.itemsSource = m_others;
-
-            m_othersListView.makeItem = () => new MiscItem();
-
-            m_othersListView.bindItem = (e, i) => (e as MiscItem)?.Bind(m_tileSet, m_others[i], 
-                () =>
-                {
-                    m_textureSetDisplay?.UpdateFields();
-                }
-            );
-        }
-
-        private void UpdateTextureSetDisplay()
-        {
-            m_textureSetDisplay.tileSet = m_tileSet;
-            m_textureSetDisplay.OnBrushTypeChanged(m_paintControl.brushType);
-        }
-    
-        private List<MiscPaintable> ValidateOtherPaintables(List<MiscPaintable> others)
-        {
-            HashSet<MiscPaintable> allOptions = new HashSet<MiscPaintable>();
-            allOptions.Add(MiscPaintable.Self);
-            allOptions.Add(MiscPaintable.Decorator);
-
-            if (others == null)
-            {
-                others = new List<MiscPaintable>();
-            }
-
-            List<int> unintendedIndices = new List<int>();
-            int i = 0;
-            foreach (MiscPaintable other in others)
-            {
-                if (!allOptions.Remove(other))
-                {
-                    unintendedIndices.Add(i);
-                }
-                i++;
-            }
-            unintendedIndices = unintendedIndices.OrderByDescending(i => i).ToList();
-            foreach (int index in unintendedIndices)
-            {
-                others.RemoveAt(index);
-            }
-
-            foreach (MiscPaintable remainingOption in allOptions)
-            {
-                others.Add(remainingOption);
-            }
-
-            return others;
-        }
-
-        internal enum MiscPaintable
-        {
-            None,
-            Self,
-            Decorator
-        }
-    }
-
-    internal class SplitView : TwoPaneSplitView
-    {
-        public new class UxmlFactory : UxmlFactory<SplitView, UxmlTraits> { }
-    }
-
-    internal class EditableLabel : VisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<EditableLabel, UxmlTraits> { }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            private UxmlStringAttributeDescription m_placeholderText = new UxmlStringAttributeDescription()
-            {
-                name = "placeholder-text",
-                defaultValue = "Enter text..."
-            };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                
-                if (ve is not EditableLabel label)
-                {
-                    return;
-                }
-
-                label.placeholderText = m_placeholderText.GetValueFromBag(bag, cc);
-            }
-        }
-
-        private Label     m_label;
-        private TextField m_textField;
-        private string    m_placeholderText;
-        private string    m_text;
-
-        public event Action<string> onValueChanged;
-
-        private Color m_color = Color.white;
-
-        public Color color
-        {
-            get => m_color;
-            set
-            {
-                m_color = value;
-                m_color.a = 1.0f;
-                UpdateLabel();
-            }
-        }
-
-        public string placeholderText
-        {
-            get => m_placeholderText;
-            set
-            {
-                m_placeholderText = value;
-                UpdateLabel();
-            }
-        }
-
-        public string text
-        {
-            get => m_textField.value;
-            set
-            {
-                if (m_textField.value != value)
-                {
-                    m_textField.value = value;
-                    UpdateLabel();
-                }
-            }
-        }
-
-        public EditableLabel()
-        {
-            m_label = new Label()
-            {
-                text = m_placeholderText
-            };
-            m_label.style.flexGrow     = 1.0f;
-            m_label.style.marginTop    = 2.0f;
-            m_label.style.marginBottom = 2.0f;
-            m_label.style.marginLeft   = 8.0f;
-            m_label.style.marginRight  = 8.0f;
-
-            m_textField = new TextField();
-            m_label.style.flexGrow = 1.0f;
-
-            Add(m_textField);
-            Add(m_label);
-
-            m_textField.style.display = DisplayStyle.None;
-            m_label.style.display = DisplayStyle.Flex;
-
-            m_label.RegisterCallback<ClickEvent>(OnLabelClicked);
-
-            m_textField.RegisterCallback<FocusOutEvent>(OnTextFocusOut);
-        }
-
-        private void OnLabelClicked(ClickEvent e)
-        {
-            m_label.style.display = DisplayStyle.None;
-            m_textField.style.display = DisplayStyle.Flex;
-            m_textField.Focus();
-        }
-
-        private void OnTextFocusOut(FocusOutEvent e)
-        {
-            UpdateLabel();
-            m_textField.style.display = DisplayStyle.None;
-            m_label.style.display = DisplayStyle.Flex;
-        }
-
-        private void OnTextKeyDown(KeyDownEvent e)
-        {
-            if (e.keyCode == KeyCode.Escape || e.keyCode == KeyCode.KeypadEnter)
-            {
-                UpdateLabel();
-                m_textField.style.display = DisplayStyle.None;
-                m_label.style.display = DisplayStyle.Flex;
-            }
-        }
-
-        private void UpdateLabel()
-        {
-            string text = m_textField.value;
-            if (string.IsNullOrEmpty(text))
-            {
-                m_label.text = m_placeholderText;
-                m_label.style.unityFontStyleAndWeight = FontStyle.Italic;
-                m_label.style.color = new Color(0.7f * m_color.r, 0.7f * m_color.g, 0.7f * m_color.b, 1.0f);
-            }
-            else
-            {
-                m_label.text = text;
-                m_label.style.unityFontStyleAndWeight = FontStyle.Normal;
-                m_label.style.color = m_color;
-            }
-
-            if (m_text != text)
-            {
-                m_text = text;
-                onValueChanged?.Invoke(m_text);
-            }
-        }
-    }
-
-    internal class ScopedTileSelector : PopupField<Tile>
-    {
-        private TileSet          m_tileSet;
-        private Func<Tile, bool> m_filter;
-
-        public Action<Tile> onValueChanged;
-
-        public Func<Tile, bool> filter
-        {
-            get => m_filter;
-            set
-            {
-                m_filter = value;
-                choices = MakeChoices(m_tileSet, m_filter);
-            }
-        }
-
-        public ScopedTileSelector(TileSet tileSet, string label) : base(label, MakeChoices(tileSet), 0, null, null)
-        {
-            m_tileSet = tileSet;
-
-            formatSelectedValueCallback = FormatItem;
-            formatListItemCallback      = FormatItem;
-
-            RegisterCallback<ChangeEvent<Tile>>(e =>
-            {
-                onValueChanged?.Invoke(e.newValue);
-            });
-        }
-
-        private string FormatItem(Tile tile) => tile != null ? tile.name : "None";
-
-        private static List<Tile> MakeChoices(TileSet tileSet, Func<Tile, bool> filter = null)
-        {
-            List<Tile> results = tileSet.tiles.Where(t => t != null && (filter == null || filter.Invoke(t))).ToList();
-            results.Insert(0, null);
-            return results;
-        }
-    }
-
-    internal class TileCategoryItem : VisualElement
-    {
-        private EditableLabel m_name;
-        private ColorField    m_color;
-        private ListView      m_tilesList;
-        private Toggle        m_inverted;
-
-        private TileSet            m_tileSet;
-        private TileCategory       m_category;
-        private List<Tile>         m_tiles;
-        private SerializedObject   m_serializedCategory;
-        private SerializedProperty m_colorProperty;
-        private SerializedProperty m_tilesProperty;
-        private SerializedProperty m_invertedProperty;
-
-        private int m_index;
-        private IList<TileCategory> m_categories;
-
-        private Action m_onNameChanged;
-        private Action m_onColorChanged;
-
-        public void Bind(TileSet tileSet, IList<TileCategory> categories, int i, Action onNameChanged, Action onColorChanged)
-        {
-            m_index = i;
-            m_categories = categories;
-
-            m_tileSet  = tileSet;
-            m_category = categories[m_index];
-            m_serializedCategory = new SerializedObject(m_category);
-            m_colorProperty    = m_serializedCategory.FindProperty("m_color");
-            m_tilesProperty    = m_serializedCategory.FindProperty("m_tiles");
-            m_invertedProperty = m_serializedCategory.FindProperty("m_inverted");
-
-            m_onNameChanged  = onNameChanged;
-            m_onColorChanged = onColorChanged;
-
-            UpdateFields();
-        }
-
-        public TileCategoryItem()
-        {
-            AddToClassList("dark-gray");
-            AddToClassList("enclosed");
-
-            VisualElement nameAndColor = new VisualElement();
-            nameAndColor.style.flexDirection = FlexDirection.Row;
-            Add(nameAndColor);
-
-            m_name = new EditableLabel();
-            m_name.color          = Color.white;
-            m_name.style.flexGrow = 1.0f;
-            m_name.onValueChanged += (newName) =>
-            {
-                if (m_index >= m_categories.Count)
-                {
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(newName))
-                {
-                    newName = "Tile Category";
-                }
-                newName = ObjectNames.GetUniqueName(m_tileSet.categories.Where(c => c != m_category).Select(c => c.name).ToArray(), newName);
-                m_category.name = newName;
-
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-
-                m_serializedCategory.Update();
-                UpdateFields();
-
-                m_name.text = newName;
-
-                m_onNameChanged?.Invoke();
-            };
-
-            nameAndColor.Add(m_name);
-
-            m_color = new ColorField();
-            m_color.value          = Color.white;
-            m_color.showEyeDropper = false;
-            m_color.showAlpha      = false;
-            m_color.style.width    = 36.0f;
-
-            m_color.RegisterValueChangedCallback(e =>
-            {
-                Color newColor = e.newValue;
-                newColor.a = 1.0f;
-
-                m_name.color = newColor;
-                m_colorProperty.colorValue = newColor;
-                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-
-                m_onColorChanged?.Invoke();
-            });
-
-            nameAndColor.Add(m_color);
-
-            m_tilesList = new ListView();
-            m_tilesList.showAddRemoveFooter = true;
-
-            m_tilesList.itemIndexChanged += (s, e) =>
-            {
-                if (s == e)
-                {
-                    return;
-                }
-
-                m_tilesProperty.MoveArrayElement(s, e);
-
-                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-            };
-
-            m_tilesList.itemsAdded += (indices) =>
-            {
-                indices = indices.OrderBy(i => i);
-                foreach (int index in indices)
-                {
-                    Tile defaultTile = null;
-
-                    m_tilesProperty.InsertArrayElementAtIndex(index);
-                    m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-
-                    SerializedProperty newTileProperty = m_tilesProperty.GetArrayElementAtIndex(index);
-                    newTileProperty.objectReferenceValue = defaultTile;
-
-                    m_tiles[index] = defaultTile;
-                }
-
-                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-            };
-
-            m_tilesList.itemsRemoved += (indices) =>
-            {
-                indices = indices.OrderByDescending(i => i);
-                foreach (int i in indices)
-                {
-                    m_tilesProperty.DeleteArrayElementAtIndex(i);
-                }
-
-                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-            };
-
-            Add(m_tilesList);
-
-            m_inverted = new Toggle("Inverted");
-
-            m_inverted.RegisterValueChangedCallback(e =>
-            {
-                m_invertedProperty.boolValue = e.newValue;
-                m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            Add(m_inverted);
-        }
-
-        private void UpdateFields()
-        {
-            string currentName = m_category.name;
-            string validatedName = ObjectNames.GetUniqueName(m_categories.Take(m_index).Where(c => c != m_categories[m_index]).Select(c => c.name).ToArray(), currentName);
-
-            if (currentName != validatedName)
-            {
-                currentName = validatedName;
-                m_category.name = currentName;
-                EditorUtility.SetDirty(m_category);
-                AssetDatabase.SaveAssetIfDirty(m_category);
-            }
-
-            m_name.text = currentName;
-            m_name.color = m_colorProperty.colorValue;
-
-            Color currentColor = m_colorProperty.colorValue;
-            currentColor.a = 1.0f;
-            m_color.value = currentColor;
-
-            m_tiles = m_category.tiles?.ToList() ?? new List<Tile>();
-
-            m_tilesList.Clear();
-            m_tilesList.itemsSource = m_tiles;
-
-            m_tilesList.makeItem = () => new ScopedTileSelector(m_tileSet, null);
-
-            m_tilesList.bindItem = (e, i) =>
-            {
-                if (e is ScopedTileSelector tileSelector)
-                {
-                    tileSelector.label = $"Element {i}";
-
-                    tileSelector.value = m_tiles[i];
-                    tileSelector.onValueChanged = (t) =>
-                    {
-                        SerializedProperty tileProperty = m_tilesProperty.GetArrayElementAtIndex(i);
-                        tileProperty.objectReferenceValue = t;
-                        m_tiles[i] = t;
-                        m_serializedCategory.ApplyModifiedPropertiesWithoutUndo();
-                    };
-                }
-            };
-
-            m_inverted.value = m_invertedProperty.boolValue;
-        }
-    }
-
-    internal class TileItem : VisualElement
-    {
-        private EditableLabel      m_name;
-        private ColorField         m_color;
-        private EnumField          m_colliderType;
-        private ScopedTileSelector m_baseTile;
-        private Toggle             m_overwriteRules;
-
-        private TileSet            m_tileSet;
-        private Tile               m_tile;
-        private SerializedObject   m_serializedTile;
-        private SerializedProperty m_colorProperty;
-        private SerializedProperty m_colliderTypeProperty;
-        private SerializedProperty m_baseTileProperty;
-        private SerializedProperty m_overwriteRulesProperty;
-
-        private int         m_index;
-        private IList<Tile> m_tiles;
-
-        private Action m_onNameChanged;
-        private Action m_onColorChanged;
-        private Action m_onBaseTileChanged;
-
-        public void Bind(TileSet tileSet, IList<Tile> tiles, int i, Action onNameChanged, Action onColorChanged, Action onBaseTileChanged)
-        {
-            m_index = i;
-            m_tiles = tiles;
-
-            m_tileSet = tileSet;
-            m_tile = tiles[m_index];
-            m_serializedTile = new SerializedObject(m_tile);
-            m_colorProperty          = m_serializedTile.FindProperty("m_color");
-            m_colliderTypeProperty   = m_serializedTile.FindProperty("m_colliderType");
-            m_baseTileProperty       = m_serializedTile.FindProperty("m_baseTile");
-            m_overwriteRulesProperty = m_serializedTile.FindProperty("m_overwriteRules");
-
-            m_onNameChanged     = onNameChanged;
-            m_onColorChanged    = onColorChanged;
-            m_onBaseTileChanged = onBaseTileChanged;
-
-            UpdateFields();
-        }
-
-        public TileItem(TileSet tileSet)
-        {
-            AddToClassList("dark-gray");
-            AddToClassList("enclosed");
-
-            m_tileSet = tileSet;
-
-            VisualElement nameAndColor = new VisualElement();
-            nameAndColor.style.flexDirection = FlexDirection.Row;
-            Add(nameAndColor);
-
-            m_name = new EditableLabel();
-            m_name.color = Color.white;
-            m_name.style.flexGrow = 1.0f;
-
-            m_name.onValueChanged += (newName) =>
-            {
-                if (m_index >= m_tiles.Count)
-                {
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(newName))
-                {
-                    newName = "Tile";
-                }
-                newName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => t != m_tile).Select(c => c.name).ToArray(), newName);
-                m_tile.name = newName;
-
-                EditorUtility.SetDirty(m_tile);
-                AssetDatabase.SaveAssetIfDirty(m_tile);
-
-                m_serializedTile.Update();
-                UpdateFields();
-
-                m_name.text = newName;
-                m_onNameChanged?.Invoke();
-            };
-
-            nameAndColor.Add(m_name);
-
-            m_color = new ColorField();
-            m_color.value = Color.white;
-            m_color.showEyeDropper = false;
-            m_color.showAlpha = false;
-            m_color.style.width = 36.0f;
-
-            m_color.RegisterValueChangedCallback(e =>
-            {
-                Color newColor = e.newValue;
-                newColor.a = 1.0f;
-
-                m_name.color = newColor;
-                m_colorProperty.colorValue = newColor;
-                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
-
-                m_onColorChanged?.Invoke();
-            });
-
-            nameAndColor.Add(m_color);
-
-            m_colliderType = new EnumField("Collider type", ColliderType.None);
-            m_colliderType.style.marginLeft = 16.0f;
-
-            m_colliderType.RegisterValueChangedCallback(e =>
-            {
-                ColliderType newColliderType = (ColliderType)e.newValue;
-
-                m_colliderTypeProperty.enumValueIndex = (int)newColliderType;
-                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            Add(m_colliderType);
-
-            m_baseTile = new ScopedTileSelector(m_tileSet, "Base tile");
-            m_baseTile.style.marginLeft = 16.0f;
-            m_baseTile.onValueChanged += (t) =>
-            {
-                m_baseTileProperty.objectReferenceValue = t;
-                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
-
-                m_onBaseTileChanged?.Invoke();
-            };
-
-            Add(m_baseTile);
-
-            m_overwriteRules = new Toggle("Overwrite rules");
-            m_overwriteRules.style.marginLeft = 16.0f;
-
-            m_overwriteRules.RegisterValueChangedCallback(e =>
-            {
-                m_overwriteRulesProperty.boolValue = e.newValue;
-                m_serializedTile.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            Add(m_overwriteRules);
-        }
-
-        private void UpdateFields()
-        {
-            string currentName = m_tiles[m_index].name;
-            string validatedName = ObjectNames.GetUniqueName(m_tileSet.tiles.Where(t => t != m_tile).Select(t => t.name).ToArray(), currentName);
-
-            if (currentName != validatedName)
-            {
-                currentName = validatedName;
-                m_tile.name = currentName;
-                EditorUtility.SetDirty(m_tile);
-                AssetDatabase.SaveAssetIfDirty(m_tile);
-            }
-
-            m_name.text = currentName;
-            m_name.color = m_colorProperty.colorValue;
-
-            Color currentColor = m_colorProperty.colorValue;
-            currentColor.a = 1.0f;
-            m_color.value = currentColor;
-
-            ColliderType colliderType = (ColliderType)m_colliderTypeProperty.enumValueIndex;
-            m_colliderType.value = colliderType;
-
-            m_baseTile.value = m_baseTileProperty.objectReferenceValue as Tile;
-            m_baseTile.filter = t => t == null || !t.IsDescendantOf(m_tile);
-
-            m_overwriteRules.value = m_overwriteRulesProperty.boolValue;
-        }
-    }
-
-    internal class MiscItem : VisualElement
-    {
-        private TileSetEditorWindow.MiscPaintable m_paintable;
-
-        private Label      m_name;
-        private ColorField m_color;
-
-        private UnityEngine.Object m_target;
-        private SerializedObject   m_serializedTarget;
-        private SerializedProperty m_colorProperty;
-
-        public TileSetEditorWindow.MiscPaintable paintable => m_paintable;
-
-        public void Bind(TileSet tileSet, TileSetEditorWindow.MiscPaintable paintable, Action onColorChanged)
-        {
-            m_paintable = paintable;
-
-            SerializedObject serializedTileSet = new SerializedObject(tileSet);
-            UnityEngine.Object target = null;
-
-            switch (paintable)
-            {
-                case TileSetEditorWindow.MiscPaintable.Self:
-                    {
-                        SerializedProperty selfFilterProperty = serializedTileSet.FindProperty("m_selfFilter");
-
-                        target = selfFilterProperty.objectReferenceValue;
-                        if (target == null)
-                        {
-                            SelfTileFilter selfFilter = ScriptableObject.CreateInstance<SelfTileFilter>();
-                            selfFilter.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector | HideFlags.HideInHierarchy;
-                            selfFilter.name = "Self";
-
-                            AssetDatabase.AddObjectToAsset(selfFilter, tileSet);
-
-                            selfFilterProperty.objectReferenceValue = selfFilter;
-
-                            serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                            EditorUtility.SetDirty(tileSet);
-                            AssetDatabase.SaveAssetIfDirty(tileSet);
-
-                            target = selfFilter;
-                        }
-
-                        break;
-                    }
-                case TileSetEditorWindow.MiscPaintable.Decorator:
-                    {
-                        SerializedProperty decoratorProperty = serializedTileSet.FindProperty("m_decorator");
-
-                        target = decoratorProperty.objectReferenceValue;
-                        if (target == null)
-                        {
-                            TileDecorator decorator = ScriptableObject.CreateInstance<TileDecorator>();
-                            decorator.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector | HideFlags.HideInHierarchy;
-                            decorator.name = "Decorator";
-
-                            AssetDatabase.AddObjectToAsset(decorator, tileSet);
-
-                            decoratorProperty.objectReferenceValue = decorator;
-
-                            serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-                            EditorUtility.SetDirty(tileSet);
-                            AssetDatabase.SaveAssetIfDirty(tileSet);
-
-                            target = decorator;
-                        }
-
-                        break;
-                    }
-            }
-
-            m_target           = target;
-            m_serializedTarget = new SerializedObject(m_target);
-            m_colorProperty    = m_serializedTarget.FindProperty("m_color");
-
-            Color color = m_colorProperty.colorValue;
-            color.a = 1.0f;
-
-            m_name.text = m_target.name;
-
-            m_name.style.color        = color;
-            m_name.style.flexGrow     = 1.0f;
-            m_name.style.marginTop    = 2.0f;
-            m_name.style.marginBottom = 2.0f;
-            m_name.style.marginLeft   = 8.0f;
-            m_name.style.marginRight  = 8.0f;
-
-            m_color.value = color;
-            m_color.RegisterValueChangedCallback(e =>
-            {
-                Color newColor = e.newValue;
-                newColor.a = 1.0f;
-
-                m_name.style.color = newColor;
-                m_colorProperty.colorValue = newColor;
-                m_serializedTarget.ApplyModifiedPropertiesWithoutUndo();
-
-                onColorChanged?.Invoke();
-            });
-        }
-
-        public MiscItem()
-        {
-            AddToClassList("dark-gray");
-            AddToClassList("enclosed");
-
-            VisualElement nameAndColor = new VisualElement();
-            nameAndColor.style.flexDirection = FlexDirection.Row;
-            Add(nameAndColor);
-
-            m_name = new Label();
-            m_name.style.color    = Color.white;
-            m_name.style.flexGrow = 1.0f;
-            nameAndColor.Add(m_name);
-
-            m_color = new ColorField();
-            m_color.value = Color.white;
-            m_color.showEyeDropper = false;
-            m_color.showAlpha = false;
-            m_color.style.width = 36.0f;
-            nameAndColor.Add(m_color);
-        }
-    }
-
-    internal class TextureSetDisplay : VisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<TextureSetDisplay> { };
-
-        public event Action onNewTextureAdded;
-
-        private TileSet            m_tileSet;
-        private SerializedObject   m_serializedTileSet;
-        private SerializedProperty m_texturesProperty;
-        private SerializedProperty m_spriteEntriesProperty;
-
-        private List<TextureDisplay> m_elements = new List<TextureDisplay>();
-
-        private Texture2D m_lockIconTexture;
-
-        private Label m_message;
-
-        private PaintControl m_paintControl;
-
-        private float m_scale = 1.0f;
-
-        private static float s_minScale = 0.01f;
-        private static float s_maxScale = 40.0f;
-
-        public TileSet tileSet
-        {
-            get => m_tileSet;
-            set
-            {
-                m_tileSet               = value;
-                m_serializedTileSet     = m_tileSet ? new SerializedObject(m_tileSet) : null;
-                m_texturesProperty      = m_tileSet ? m_serializedTileSet.FindProperty("m_textures") : null;
-                m_spriteEntriesProperty = m_tileSet ? m_serializedTileSet.FindProperty("m_spriteEntries") : null;
-
-                m_serializedTileSet?.Update();
-
-                ValidateSpriteEntries();
-                UpdateElements();
-            }
-        }
-
-        public PaintControl paintControl
-        {
-            get => m_paintControl;
-            set => m_paintControl = value;
-        }
-
-        public Texture2D lockIconTexture
-        {
-            get => m_lockIconTexture;
-            set
-            {
-                m_lockIconTexture = value;
-                foreach (TextureDisplay textureDisplay in m_elements)
-                {
-                    textureDisplay.lockIconTexture = m_lockIconTexture;
-                }
-            }
-        }
-
-        public void UpdateFields()
-        {
-            m_serializedTileSet.Update();
-
-            foreach (TextureDisplay textureDisplay in m_elements)
-            {
-                textureDisplay.UpdateFields();
-            }
-        }
-
-        public void OnBrushTypeChanged(PaintControl.BrushType brushType)
-        {
-            foreach (TextureDisplay textureDisplay in m_elements)
-            {
-                textureDisplay.OnBrushTypeChanged(brushType);
-            }
-        }
-
-        public TextureSetDisplay()
-        {
-            m_scale = EditorPrefs.GetFloat("Zlitz.Extra2D.BetterTile.textureSetDisplayScale", 1.0f);
-
-            RegisterCallback<DragUpdatedEvent>(e => OnDragUpdated());
-            RegisterCallback<DragPerformEvent>(e => OnDragPerform());
-            RegisterCallback<WheelEvent>(e =>
-            {
-                if (!e.ctrlKey || e.delta.y == 0.0f)
-                {
-                    return;
-                }
-
-                m_scale = Mathf.Clamp(m_scale - e.delta.y * 0.05f, s_minScale, s_maxScale);
-                EditorPrefs.SetFloat("Zlitz.Extra2D.BetterTile.textureSetDisplayScale", m_scale);
-
-                foreach (TextureDisplay textureDisplay in m_elements)
-                {
-                    textureDisplay.Scale(m_scale);
-                }
-
-                EditorApplication.delayCall += () =>
-                {
-                    style.height = contentRect.height - 1.0f;
-                    style.flexGrow = 0.0f;
-                    MarkDirtyRepaint();
-
-                    EditorApplication.delayCall += () =>
-                    {
-                        style.height = StyleKeyword.Auto;
-                        style.flexGrow = 1.0f;
-                        MarkDirtyRepaint();
-                    };
-                };
-            });
-
-            RegisterCallback<MouseDownEvent>(e =>
-            {
-                if (e.button == 0)
-                {
-                    m_paintControl.painting = true;
-                }
-            });
-            RegisterCallback<MouseUpEvent>(e =>
-            {
-                m_paintControl.painting = false;
-            });
-            RegisterCallback<MouseLeaveEvent>(e =>
-            {
-                m_paintControl.painting = false;
-            });
-        }
-
-        private void ValidateSpriteEntries()
-        {
-            if (m_tileSet == null)
+            if (Event.current == null)
             {
                 return;
             }
 
-            HashSet<int> invalidIndices = new HashSet<int>();
-            for (int i = 0; i < m_spriteEntriesProperty.arraySize; i++)
+            if (Event.current.type == EventType.KeyDown && hasUnsavedChanges)
             {
-                invalidIndices.Add(i);
-            }
-
-            for (int textureIndex = 0; textureIndex < m_texturesProperty.arraySize; textureIndex++)
-            {
-                SerializedProperty textureProperty = m_texturesProperty.GetArrayElementAtIndex(textureIndex);
-                Texture2D texture = textureProperty.objectReferenceValue as Texture2D;
-
-                if (texture == null)
+                bool isSaveShortcut = Event.current.keyCode == KeyCode.S && (Event.current.control || Event.current.command);
+                if (isSaveShortcut)
                 {
-                    continue;
+                    SaveChanges();
                 }
+            }
+        }
 
-                Sprite[] textureSprites = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(texture)).OfType<Sprite>().ToArray();
-                foreach (Sprite sprite in textureSprites)
+        private void CreateGUI()
+        {
+            m_onTileSetChanged    = null;
+            m_onTilesChanged      = null;
+            m_onTilesDeleted      = null;
+            m_onCategoriesChanged = null;
+            m_onCategoriesDeleted = null;
+
+            m_onTileNameChanged      = null;
+            m_onTileColorChanged     = null;
+            m_onCategoryNameChanged  = null;
+            m_onCategoryColorChanged = null;
+            m_onFilterColorChanged   = null;
+
+            m_paintContext ??= new PaintContext(this);
+            m_paintContext.ClearBrushEvent();
+
+            VisualElement root = rootVisualElement;
+            root.RegisterCallback<KeyDownEvent>(e =>
+            {
+                if (hasUnsavedChanges && e.keyCode == KeyCode.S && (e.commandKey || e.ctrlKey))
                 {
-                    // Search for existing sprite entry of matching sprite
+                    SaveChanges();
+                }
+            });
 
-                    int foundIndex = -1;
-                    for (int spriteEntryIndex = 0; spriteEntryIndex < m_spriteEntriesProperty.arraySize; spriteEntryIndex++)
+            TwoPaneSplitView splitView = CreateSplitView(root, out VisualElement leftPane, out VisualElement rightPane);
+
+            ScrollView leftContent = CreateScrollView(leftPane);
+
+            VisualElement general = CreateGeneralFoldout(leftContent);
+            VisualElement content = CreateContentFoldout(leftContent);
+            VisualElement info    = CreateInfoFoldout(leftContent);
+
+            VisualElement paintControl = CreatePaintControl(rightPane);
+            VisualElement mainEditor   = CreateMainEditor(rightPane);
+
+            OnTileSetChanged();
+        }
+
+        private TwoPaneSplitView CreateSplitView(VisualElement parent, out VisualElement leftPane, out VisualElement rightPane)
+        {
+            float splitViewWidth = EditorPrefs.GetFloat("Zlitz.Extra2D.BetterTile.TileSetEditorWindow.splitViewWidth", 360.0f);
+
+            TwoPaneSplitView splitView = new TwoPaneSplitView(0, splitViewWidth, TwoPaneSplitViewOrientation.Horizontal);
+            splitView.orientation = TwoPaneSplitViewOrientation.Horizontal;
+            splitView.style.flexGrow = 1.0f;
+            parent.Add(splitView);
+
+            leftPane = new VisualElement();
+            leftPane.style.minWidth = 360.0f;
+            splitView.Add(leftPane);
+
+            rightPane = new VisualElement();
+            splitView.Add(rightPane);
+
+            leftPane.RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                float newWidth = e.newRect.width;
+                EditorPrefs.SetFloat("namespace Zlitz.Extra2D.BetterTile.TileSetEditorWindow.splitViewWidth", Mathf.Max(360.0f, newWidth));
+            });
+
+            return splitView;
+        }
+
+        private VisualElement CreateGeneralFoldout(VisualElement parent)
+        {
+            VisualElement container = CreateFoldout(parent, "General", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.generalFoldout");
+            container.style.flexDirection = FlexDirection.RowReverse;
+
+            ObjectField tileSetField = new ObjectField();
+            tileSetField.objectType = typeof(TileSet);
+            tileSetField.label = "Tile Set";
+            tileSetField.style.flexGrow = 1.0f;
+            tileSetField.value = m_tileSet;
+
+            tileSetField.RegisterValueChangedCallback(e =>
+            {
+                TileSet newTileSet = e.newValue as TileSet;
+
+                if (m_tileSet != newTileSet)
+                {
+                    if (hasUnsavedChanges)
                     {
-                        SerializedProperty entryProperty = m_spriteEntriesProperty.GetArrayElementAtIndex(spriteEntryIndex);
+                        int option = EditorUtility.DisplayDialogComplex(
+                        "Tile Set Editor - Unsaved Changes Detected",
+                        saveChangesMessage,
+                        "Save",
+                        "Discard",
+                        "Cancel"
+                    );
 
-                        SerializedProperty spriteProperty = entryProperty.FindPropertyRelative("m_sprite");
-                        Sprite currentSprite = spriteProperty.objectReferenceValue as Sprite;
-
-                        if (currentSprite == sprite)
+                        switch (option)
                         {
-                            foundIndex = spriteEntryIndex;
-                            break;
+                            case 0:
+                                {
+                                    SaveChanges();
+
+                                    m_tileSet = newTileSet;
+                                    OnTileSetChanged();
+                                    
+                                    hasUnsavedChanges = false;
+                                    break;
+                                }
+                            case 1:
+                                {
+                                    DiscardChanges();
+                                    
+                                    m_tileSet = newTileSet;
+                                    OnTileSetChanged();
+                                    
+                                    hasUnsavedChanges = false;
+                                    break;
+                                }
+                            default:
+                                {
+                                    tileSetField.SetValueWithoutNotify(m_tileSet);
+                                    break;
+                                }
                         }
-                    }
-
-                    // If no entry exist, create new one and append to entry list
-
-                    if (foundIndex >= 0)
-                    {
-                        invalidIndices.Remove(foundIndex);
                     }
                     else
                     {
-                        int index = m_spriteEntriesProperty.arraySize;
-                        m_spriteEntriesProperty.InsertArrayElementAtIndex(index);
-
-                        SerializedProperty newEntryProperty = m_spriteEntriesProperty.GetArrayElementAtIndex(index);
-
-                        // Initialize new sprite entry
-
-                        SerializedProperty newSpriteProperty = newEntryProperty.FindPropertyRelative("m_sprite");
-                        newSpriteProperty.objectReferenceValue = sprite;
-
-                        SerializedProperty newWeightProperty = newEntryProperty.FindPropertyRelative("m_weight");
-                        newWeightProperty.floatValue = 1.0f;
-
-                        SerializedProperty newTileProperty = newEntryProperty.FindPropertyRelative("m_tile");
-                        newTileProperty.objectReferenceValue = null;
-
-                        SerializedProperty newRuleProperty = newEntryProperty.FindPropertyRelative("m_rule");
-
-                        SerializedProperty newTopLeftProperty = newRuleProperty.FindPropertyRelative("m_topLeft");
-                        newTopLeftProperty.objectReferenceValue = null;
-
-                        SerializedProperty newTopProperty = newRuleProperty.FindPropertyRelative("m_top");
-                        newTopProperty.objectReferenceValue = null;
-
-                        SerializedProperty newTopRightProperty = newRuleProperty.FindPropertyRelative("m_topRight");
-                        newTopRightProperty.objectReferenceValue = null;
-
-                        SerializedProperty newleftProperty = newRuleProperty.FindPropertyRelative("m_left");
-                        newleftProperty.objectReferenceValue = null;
-
-                        SerializedProperty newRightProperty = newRuleProperty.FindPropertyRelative("m_right");
-                        newRightProperty.objectReferenceValue = null;
-
-                        SerializedProperty newBottomLeftProperty = newRuleProperty.FindPropertyRelative("m_bottomLeft");
-                        newBottomLeftProperty.objectReferenceValue = null;
-
-                        SerializedProperty newBottomProperty = newRuleProperty.FindPropertyRelative("m_bottom");
-                        newBottomProperty.objectReferenceValue = null;
-
-                        SerializedProperty newBottomRightProperty = newRuleProperty.FindPropertyRelative("m_bottomRight");
-                        newBottomRightProperty.objectReferenceValue = null;
+                        m_tileSet = newTileSet;
+                        OnTileSetChanged();
                     }
                 }
-            }
+            });
 
-            int[] remainingInvalidIndices = invalidIndices.OrderByDescending(i => i).ToArray();
-            foreach (int invalidIndex in remainingInvalidIndices)
+            m_onTileSetChanged += () =>
             {
-                m_spriteEntriesProperty.DeleteArrayElementAtIndex(invalidIndex);
-            }
-
-            m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private void UpdateElements()
-        {
-            m_scale = EditorPrefs.GetFloat("Zlitz.Extra2D.BetterTile.textureSetDisplayScale", 1.0f);
-
-            Clear();
-            m_elements.Clear();
-
-            EditorApplication.delayCall += () =>
-            {
-                style.height = contentRect.height - 1.0f;
-                style.flexGrow = 0.0f;
-                MarkDirtyRepaint();
-
-                EditorApplication.delayCall += () =>
-                {
-                    style.height = StyleKeyword.Auto;
-                    style.flexGrow = 1.0f;
-                    MarkDirtyRepaint();
-                };
+                tileSetField.value = m_tileSet;
             };
 
-            if (m_texturesProperty != null)
+            Button createButton = new Button(() =>
             {
-                for (int i = 0; i < m_texturesProperty.arraySize; i++)
+                bool cancelled = false;
+                if (hasUnsavedChanges)
                 {
-                    SerializedProperty textureProperty = m_texturesProperty.GetArrayElementAtIndex(i);
-                    
-                    if (textureProperty.objectReferenceValue is Texture2D texture)
+                    int option = EditorUtility.DisplayDialogComplex(
+                    "Tile Set Editor - Unsaved Changes Detected",
+                    saveChangesMessage,
+                    "Save",
+                    "Discard",
+                    "Cancel"
+                );
+
+                    switch (option)
                     {
-                        int index = i;
-                        TextureDisplay newElemenet = new TextureDisplay(texture, () =>
-                        {
-                            EditorApplication.delayCall += () =>
+                        case 0:
                             {
-                                m_texturesProperty.DeleteArrayElementAtIndex(index);
-                                m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
-
-                                ValidateSpriteEntries();
-                                UpdateElements();
-                            };
-                        }, UpdateElements, m_scale, m_spriteEntriesProperty);
-                        newElemenet.paintControl = m_paintControl;
-                        newElemenet.lockIconTexture = m_lockIconTexture;
-                        Add(newElemenet);
-                        m_elements.Add(newElemenet);
+                                SaveChanges();
+                                hasUnsavedChanges = false;
+                                break;
+                            }
+                        case 1:
+                            {
+                                DiscardChanges();
+                                hasUnsavedChanges = false;
+                                break;
+                            }
+                        default:
+                            {
+                                cancelled = true;
+                                break;
+                            }
                     }
                 }
-            }
 
-            if (m_elements.Count <= 0)
-            {
-                m_message = new Label();
-                m_message.text = "Drag sliced textures here...";
-
-                m_message.style.flexGrow                = 1.0f;
-                m_message.style.fontSize                = 18.0f;
-                m_message.style.unityTextAlign          = TextAnchor.MiddleCenter;
-                m_message.style.unityFontStyleAndWeight = FontStyle.Italic;
-                Add(m_message);
-            }
-        }
-
-        private void OnDragUpdated()
-        {
-            if (m_texturesProperty == null || !ValidateDragAction(out Texture2D[] textures))
-            {
-                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
-                return;
-            }
-
-            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-        }
-
-        private void OnDragPerform()
-        {
-            if (m_texturesProperty == null || !ValidateDragAction(out Texture2D[] textures))
-            {
-                return;
-            }
-
-            foreach (Texture2D texture in textures)
-            {
-                bool repeated = false;
-                for (int i = 0; i < m_texturesProperty.arraySize; i++)
+                if (cancelled)
                 {
-                    Texture existingTexture = m_texturesProperty.GetArrayElementAtIndex(i).objectReferenceValue as Texture2D;
-                    if (existingTexture == texture)
+                    return;
+                }
+
+                string path = EditorUtility.SaveFilePanelInProject(
+                    "Create Tile Set",
+                    "New Tile Set.asset",
+                    "asset",
+                    "Enter a save name to save the tile set to"
+                );
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    return;
+                }
+
+                TileSet newTileSet = CreateInstance<TileSet>();
+
+                AssetDatabase.CreateAsset(newTileSet, path);
+                AssetDatabase.SaveAssets();
+
+                m_tileSet = newTileSet;
+                OnTileSetChanged();
+
+                tileSetField.value = newTileSet;
+            });
+            createButton.text = "Create";
+            createButton.style.width = 60.0f;
+            container.Add(createButton);
+
+            container.Add(tileSetField);
+
+            return container;
+        }
+
+        private VisualElement CreateContentFoldout(VisualElement parent)
+        {
+            VisualElement container = CreateFoldout(parent, "Content", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.contentFoldout");
+
+            VisualElement invalid = new VisualElement();
+            container.Add(invalid);
+
+            HelpBox invalidHelpBox = new HelpBox("Select an existing TileSet or create a new one to edit", HelpBoxMessageType.Info);
+            invalid.Add(invalidHelpBox);
+
+            SelectionGroup valid = new SelectionGroup();
+            valid.onCurrentElementChanged += (selected) =>
+            {
+                if (selected == null)
+                {
+                    m_brush.SetSpecialFilter(m_paintContext, TileFilterType.Any);
+                }
+                else if (selected is TileItem tileItem)
+                {
+                    m_brush.SetTile(m_paintContext, tileItem.serializedTile.tile);
+                }
+                else if (selected is TileCategoryItem categoryItem)
+                {
+                    m_brush.SetCategory(m_paintContext, categoryItem.serializedCategory.category);
+                }
+                else if (selected is SpecialFilterItem filterItem)
+                {
+                    m_brush.SetSpecialFilter(m_paintContext, filterItem.serializedSpecialFilter.filterType);
+                }
+            };
+            container.Add(valid);
+
+            // Tiles
+
+            ListView tilesListView = CreateListView(valid, "Tiles", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.tilesList", false);
+
+            tilesListView.makeItem = () =>
+            {
+                TileItem tileItem = new TileItem(valid, () =>
+                {
+                    hasUnsavedChanges = true;
+                }, m_onTileNameChanged, m_onTileColorChanged);
+
+                tileItem.style.marginLeft  = -28.0f;
+                tileItem.style.marginRight = -4.0f;
+
+                return tileItem;
+            };
+            tilesListView.bindItem = (e, i) =>
+            {
+                (e as TileItem)?.Bind(m_serializedTileSet.tiles[i], m_serializedTileSet.tiles);
+            };
+
+            tilesListView.itemsAdded += (indices) =>
+            {
+                List<string> existingNames = m_serializedTileSet.tiles.Where(t => t?.tile != null).Select(t => t.tile.name).ToList();
+
+                bool changed = false;
+                foreach (int i in indices)
+                {
+                    Tile newTile = CreateInstance<Tile>();
+                    string newName = ObjectNames.GetUniqueName(existingNames.ToArray(), "New Tile");
+
+                    existingNames.Add(newName);
+                    newTile.name = newName;
+
+                    SerializedObject so = new SerializedObject(newTile);
+
+                    SerializedProperty tileSetProperty = so.FindProperty("m_tileSet");
+                    tileSetProperty.objectReferenceValue = m_tileSet;
+
+                    so.ApplyModifiedPropertiesWithoutUndo();
+
+                    m_serializedTileSet.tiles[i] = new SerializedTile();
+                    m_serializedTileSet.tiles[i].Update(newTile);
+
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    hasUnsavedChanges = true;
+                    EditorApplication.delayCall += () =>
                     {
-                        repeated = true;
-                        break;
-                    }
+                        m_onTilesChanged?.Invoke();
+                    };
                 }
-
-                if (repeated)
+            };
+            tilesListView.itemsRemoved += (indices) =>
+            {
+                if (indices?.Any() ?? false)
                 {
-                    continue;
+                    m_onTilesDeleted?.Invoke(indices.Select(i => m_serializedTileSet.tiles[i]));
+                    
+                    hasUnsavedChanges = true;
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_onTilesChanged?.Invoke();
+                    };
+                }
+            };
+            tilesListView.itemIndexChanged += (oldIndex, newIndex) =>
+            {
+                if (oldIndex != newIndex)
+                {
+                    hasUnsavedChanges = true;
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_onTilesChanged?.Invoke();
+                    };
+                }
+            };
+
+            // Categories
+
+            ListView categoriesListView = CreateListView(valid, "Categories", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.categoriesList", false);
+
+            categoriesListView.makeItem = () =>
+            {
+                TileCategoryItem categoryItem = new TileCategoryItem(valid, () =>
+                {
+                    hasUnsavedChanges = true;
+                }, m_onCategoryNameChanged, m_onCategoryColorChanged);
+
+                categoryItem.SetAvailableTiles(m_serializedTileSet.tiles);
+                m_onTilesChanged += () =>
+                {
+                    categoryItem.SetAvailableTiles(m_serializedTileSet.tiles);
+                };
+
+                categoryItem.style.marginLeft  = -28.0f;
+                categoryItem.style.marginRight = -4.0f;
+
+                return categoryItem;
+            };
+            categoriesListView.bindItem = (e, i) =>
+            {
+                (e as TileCategoryItem)?.Bind(m_serializedTileSet.categories[i], m_serializedTileSet.categories, m_serializedTileSet.tiles);
+            };
+            
+            categoriesListView.itemsAdded += (indices) =>
+            {
+                List<string> existingNames = m_serializedTileSet.categories.Where(c => c?.category != null).Select(c => c.category.name).ToList();
+
+                bool changed = false;
+                foreach (int i in indices)
+                {
+                    TileCategory newCategory = CreateInstance<TileCategory>();
+                    newCategory.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+                    string newName = ObjectNames.GetUniqueName(existingNames.ToArray(), "New Tile Category");
+
+                    existingNames.Add(newName);
+                    newCategory.name = newName;
+
+                    SerializedObject so = new SerializedObject(newCategory);
+
+                    SerializedProperty tileSetProperty = so.FindProperty("m_tileSet");
+                    tileSetProperty.objectReferenceValue = m_tileSet;
+
+                    so.ApplyModifiedPropertiesWithoutUndo();
+
+                    m_serializedTileSet.categories[i] = new SerializedCategory();
+                    m_serializedTileSet.categories[i].Update(newCategory);
+
+                    changed = true;
                 }
 
-                int index = m_texturesProperty.arraySize;
-                m_texturesProperty.InsertArrayElementAtIndex(index);
+                if (changed)
+                {
+                    hasUnsavedChanges = true;
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_onCategoriesChanged?.Invoke();
+                    };
+                }
+            };
+            categoriesListView.itemsRemoved += (indices) =>
+            {
+                if (indices?.Any() ?? false)
+                {
+                    m_onCategoriesDeleted?.Invoke(indices.Select(i => m_serializedTileSet.categories[i]));
 
-                SerializedProperty newTextureProperty = m_texturesProperty.GetArrayElementAtIndex(index);
-                newTextureProperty.objectReferenceValue = texture;
+                    hasUnsavedChanges = true;
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_onCategoriesChanged?.Invoke();
+                    };
+                }
+            };
+            categoriesListView.itemIndexChanged += (oldIndex, newIndex) =>
+            {
+                if (oldIndex != newIndex)
+                {
+                    hasUnsavedChanges = true;
+                }
+            };
 
-                m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
+            // Others
 
-                onNewTextureAdded?.Invoke();
-            }
+            ListView othersListView = CreateListView(valid, "Others", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.othersList", true);
 
-            m_serializedTileSet.ApplyModifiedPropertiesWithoutUndo();
+            othersListView.makeItem = () =>
+            {
+                SpecialFilterItem filterItem = new SpecialFilterItem(valid, () =>
+                {
+                    hasUnsavedChanges = true;
+                }, m_onFilterColorChanged);
 
-            ValidateSpriteEntries();
-            UpdateElements();
+                filterItem.style.marginLeft  = -28.0f;
+                filterItem.style.marginRight = -4.0f;
+
+                return filterItem;
+            };
+            othersListView.bindItem = (e, i) =>
+            {
+                (e as SpecialFilterItem)?.Bind(m_serializedTileSet.specialFilters[i]);
+            };
+
+            othersListView.itemIndexChanged += (oldIndex, newIndex) =>
+            {
+                if (oldIndex != newIndex)
+                {
+                    hasUnsavedChanges = true;
+                }
+            };
+
+            m_onTileSetChanged += () =>
+            {
+                if (m_tileSet != null)
+                {
+                    tilesListView.itemsSource      = m_serializedTileSet.tiles;
+                    categoriesListView.itemsSource = m_serializedTileSet.categories;
+                    othersListView.itemsSource     = m_serializedTileSet.specialFilters;
+                }
+
+                invalid.style.display = m_tileSet == null ? DisplayStyle.Flex : DisplayStyle.None;
+                valid.style.display   = m_tileSet != null ? DisplayStyle.Flex : DisplayStyle.None;
+            };
+
+            m_onSaved += () =>
+            {
+                tilesListView.itemsSource = m_serializedTileSet.tiles;
+                tilesListView.RefreshItems();
+
+                categoriesListView.itemsSource = m_serializedTileSet.categories;
+                categoriesListView.RefreshItems();
+
+                othersListView.itemsSource = m_serializedTileSet.specialFilters;
+                othersListView.RefreshItems();
+            };
+
+            return container;
         }
 
-        private bool ValidateDragAction(out Texture2D[] textures)
+        private VisualElement CreateInfoFoldout(VisualElement parent)
         {
-            textures = null;
+            VisualElement container = CreateFoldout(parent, "Info", "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.infoFoldout");
 
-            if (DragAndDrop.objectReferences.Length <= 0)
+            string[] infoContents = {
+                "Select an item from the content section to start painting rules (Note that you cannot paint the center with a category).",
+                "Left click to paint, hold L-Shift while clicking to paint in invert (blacklist) mode.",
+                "Right click a sprite to edit its properties and animation.",
+                "By default, if a tile satisfies multiple rules, the more specific rule is selected. Static sprites will always be included in the sprite pool no matter how specific the rules are."
+            };
+
+            foreach (string content in infoContents )
             {
-                return false;
+                HelpBox infoBox = new HelpBox();
+                infoBox.messageType = HelpBoxMessageType.Info;
+                infoBox.text = content;
+                container.Add(infoBox);
+            }
+            
+
+            return container;
+        }
+
+        private VisualElement CreatePaintControl(VisualElement parent)
+        {
+            VisualElement root = new VisualElement();
+            root.style.backgroundColor = UIColors.darken;
+            root.style.flexDirection = FlexDirection.Row;
+            root.style.paddingLeft   = 2.0f;
+            root.style.paddingRight  = 2.0f;
+            root.style.paddingTop    = 2.0f;
+            root.style.paddingBottom = 2.0f;
+            root.style.borderBottomWidth = 2.0f;
+            root.style.borderBottomColor = UIColors.border;
+            parent.Add(root);
+
+            VisualElement left = new VisualElement();
+            left.style.width = 120.0f;
+            left.style.paddingLeft   = 4.0f;
+            left.style.paddingRight  = 4.0f;
+            left.style.paddingTop    = 4.0f;
+            left.style.paddingBottom = 4.0f;
+            root.Add(left);
+
+            VisualElement right = new VisualElement();
+            right.style.flexGrow = 1.0f;
+            right.style.borderLeftWidth = 1.0f;
+            right.style.borderLeftColor = UIColors.brighten;
+            right.style.paddingLeft   = 4.0f;
+            right.style.paddingRight  = 4.0f;
+            right.style.paddingTop    = 4.0f;
+            right.style.paddingBottom = 4.0f;
+            root.Add(right);
+
+            Label label = new Label();
+            label.text = "Paint Settings";
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            label.style.marginLeft = 4.0f;
+            label.style.marginTop  = 4.0f;
+            left.Add(label);
+
+            EnumField paintMode = new EnumField(m_brush.brushType);
+            paintMode.label = "Paint Mode";
+            right.Add(paintMode);
+
+            VisualElement selectedContainer = new VisualElement();
+            selectedContainer.style.flexDirection = FlexDirection.Row;
+            selectedContainer.style.marginLeft = 4.0f;
+            selectedContainer.style.marginTop  = 2.0f;
+            selectedContainer.style.display = m_brush.brushType == BrushType.Rule ? DisplayStyle.Flex : DisplayStyle.None;
+            right.Add(selectedContainer);
+
+            Label selected = new Label();
+            selected.text = "Selected";
+            selected.style.width = 124.0f;
+            selectedContainer.Add(selected);
+
+            Label currentFilterName = new Label();
+            currentFilterName.text = "Any";
+            currentFilterName.style.unityFontStyleAndWeight = FontStyle.Bold;
+            currentFilterName.style.color = Color.white;
+            selectedContainer.Add(currentFilterName);
+
+            FloatField weight = new FloatField();
+            weight.value = m_brush.weight;
+            weight.label = "Weight";
+            weight.style.marginTop    = 0.0f;
+            weight.style.marginBottom = 0.0f;
+            weight.style.display = m_brush.brushType == BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
+            right.Add(weight);
+            weight.RegisterValueChangedCallback(e =>
+            {
+                float newValue = e.newValue;
+                if (newValue < 0.0f)
+                {
+                    newValue = 0.0f;
+                    weight.SetValueWithoutNotify(newValue);
+                }
+                m_brush.SetWeight(m_paintContext, newValue);
+            });
+
+            paintMode.RegisterValueChangedCallback(e =>
+            {
+                BrushType newPaintMode = (BrushType)e.newValue;
+                m_brush.SetBrushType(m_paintContext, newPaintMode);
+
+                selectedContainer.style.display = newPaintMode == BrushType.Rule ? DisplayStyle.Flex : DisplayStyle.None;
+                weight.style.display            = newPaintMode == BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            m_paintContext.onBrushChanged += (brush) =>
+            {
+                currentFilterName.text = "Any";
+                currentFilterName.style.color = Color.white;
+
+                if (brush is TileFilterBrush tileFilterBrush)
+                {
+                    switch (tileFilterBrush.filterType)
+                    {
+                        case TileFilterType.Any:
+                            {
+                                break;
+                            }
+                        case TileFilterType.Tile:
+                            {
+                                Tile tile = tileFilterBrush.tile;
+
+                                SerializedTile serializedTile = m_serializedTileSet.tiles.First(t => t.tile == tile);
+
+                                currentFilterName.text = serializedTile.tileName;
+                                currentFilterName.style.color = serializedTile.tileColor;
+
+                                break;
+                            }
+                        case TileFilterType.TileCategory:
+                            {
+                                TileCategory category = tileFilterBrush.category;
+
+                                SerializedCategory serializedCategory = m_serializedTileSet.categories.First(c => c.category == category);
+
+                                currentFilterName.text = serializedCategory.categoryName;
+                                currentFilterName.style.color = serializedCategory.categoryColor;
+
+                                break;
+                            }
+                        default:
+                            {
+                                TileFilterType filterType = tileFilterBrush.filterType;
+
+                                SerializedSpecialFilter serializedSpecialFilter = m_serializedTileSet.specialFilters.First(f => f.filterType == filterType);
+
+                                currentFilterName.text = ObjectNames.NicifyVariableName(filterType.ToString());
+                                currentFilterName.style.color = serializedSpecialFilter.filterColor;
+
+                                break;
+                            }
+                    }
+                }
+            };
+
+            Action updateFilterName = () =>
+            {
+                currentFilterName.text = "None";
+                currentFilterName.style.color = Color.white;
+
+                if (m_paintContext.currentBrush is TileFilterBrush tileFilterBrush)
+                {
+                    switch (tileFilterBrush.filterType)
+                    {
+                        case TileFilterType.Tile:
+                            {
+                                Tile tile = tileFilterBrush.tile;
+
+                                SerializedTile serializedTile = m_serializedTileSet.tiles.First(t => t.tile == tile);
+
+                                currentFilterName.text = serializedTile.tileName;
+                                currentFilterName.style.color = serializedTile.tileColor;
+
+                                break;
+                            }
+                        case TileFilterType.TileCategory:
+                            {
+                                TileCategory category = tileFilterBrush.category;
+
+                                SerializedCategory serializedCategory = m_serializedTileSet.categories.First(c => c.category == category);
+
+                                currentFilterName.text = serializedCategory.categoryName;
+                                currentFilterName.style.color = serializedCategory.categoryColor;
+
+                                break;
+                            }
+                        default:
+                            {
+                                TileFilterType filterType = tileFilterBrush.filterType;
+
+                                SerializedSpecialFilter serializedSpecialFilter = m_serializedTileSet.specialFilters.First(f => f.filterType == filterType);
+
+                                currentFilterName.text = ObjectNames.NicifyVariableName(filterType.ToString());
+                                currentFilterName.style.color = serializedSpecialFilter.filterColor;
+
+                                break;
+                            }
+                    }
+                }
+            };
+
+            m_onTileNameChanged      += (t) => m_paintContext.OnTileInfoChanged(t, updateFilterName);
+            m_onTileColorChanged     += (t) => m_paintContext.OnTileInfoChanged(t, updateFilterName);
+            m_onCategoryNameChanged  += (c) => m_paintContext.OnCategoryInfoChanged(c, updateFilterName);
+            m_onCategoryColorChanged += (c) => m_paintContext.OnCategoryInfoChanged(c, updateFilterName);
+            m_onFilterColorChanged   += (f) => m_paintContext.OnFilterInfoChanged(f, updateFilterName);
+
+            m_onTileSetChanged    += () => m_brush.OnTileSetChanged(m_paintContext, m_serializedTileSet);
+            m_onTilesChanged      += () => m_brush.OnTileSetChanged(m_paintContext, m_serializedTileSet);
+            m_onCategoriesChanged += () => m_brush.OnTileSetChanged(m_paintContext, m_serializedTileSet);
+
+            return root;
+        }
+
+        private VisualElement CreateMainEditor(VisualElement parent)
+        {
+            ScrollView root = CreateScrollView(parent);
+            root.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
+            root.style.flexGrow = 1.0f;
+            root.style.marginTop = 4.0f;
+
+            // Empty sprites
+
+            EmptyRuleGroupItem emptySpriteRules = new EmptyRuleGroupItem(m_paintContext, () =>
+            {
+                hasUnsavedChanges = true;
+            });
+            emptySpriteRules.style.marginBottom = 4.0f;
+            root.Add(emptySpriteRules);
+
+            // Sprites
+
+            Button addTexture = new Button(() =>
+            {
+                EditorGUIUtility.ShowObjectPicker<Texture2D>(null, false, "", 0);
+                m_onUpdate += WaitForObjectPicker;
+            });
+            addTexture.text = "Add Texture";
+            addTexture.style.width  = 124.0f;
+            addTexture.style.height = 32.0f;
+            addTexture.style.alignSelf = Align.FlexEnd;
+            addTexture.style.marginRight  = 1.0f;
+            addTexture.style.marginBottom = 4.0f;
+            addTexture.style.backgroundColor = UIColors.green;
+            root.Add(addTexture);
+
+            ListView ruleGroupsListView = CreateListView(root, null, "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.rulesList", true);
+
+            ruleGroupsListView.makeItem = () =>
+            {
+                RuleGroupItem ruleGroupItem = new RuleGroupItem(m_paintContext, () =>
+                {
+                    hasUnsavedChanges = true;
+                });
+
+                ruleGroupItem.style.marginLeft  = -28.0f;
+                ruleGroupItem.style.marginRight = -4.0f;
+
+                return ruleGroupItem;
+            };
+            ruleGroupsListView.bindItem = (e, i) =>
+            {
+                (e as RuleGroupItem)?.Bind(m_tileSet, m_serializedTileSet.ruleGroups[i],
+                    () =>
+                    {
+                        if (i >= 0 && i < m_serializedTileSet.ruleGroups.Count)
+                        {
+                            m_serializedTileSet.ruleGroups.RemoveAt(i);
+                            hasUnsavedChanges = true;
+
+                            m_onRuleGroupsChanged?.Invoke();
+                        }
+                    });
+            };
+
+            ruleGroupsListView.itemIndexChanged += (oldIndex, newIndex) =>
+            {
+                if (oldIndex != newIndex)
+                {
+                    hasUnsavedChanges = true;
+                }
+            };
+
+            // Overlays
+
+            Button addOverlayGroup = new Button();
+            addOverlayGroup.text = "Add Overlay Group";
+            addOverlayGroup.style.width = 124.0f;
+            addOverlayGroup.style.height = 32.0f;
+            addOverlayGroup.style.alignSelf = Align.FlexEnd;
+            addOverlayGroup.style.marginRight = 1.0f;
+            addOverlayGroup.style.marginBottom = 4.0f;
+            addOverlayGroup.style.backgroundColor = UIColors.green;
+            root.Add(addOverlayGroup);
+
+            ListView overlayGroupsListView = CreateListView(root, null, "Zlitz.Extra2D.BetterTile.TileSetEditorWindow.overlaysList", true);
+
+            overlayGroupsListView.makeItem = () =>
+            {
+                OverlayGroupItem overlayGroupItem = new OverlayGroupItem(m_paintContext, () =>
+                {
+                    hasUnsavedChanges = true;
+                });
+
+                m_onUpdate += overlayGroupItem.Update;
+
+                overlayGroupItem.style.marginLeft = -28.0f;
+                overlayGroupItem.style.marginRight = -4.0f;
+
+                return overlayGroupItem;
+            };
+            overlayGroupsListView.destroyItem = (e) =>
+            {
+                if (e is OverlayGroupItem overlayGroupItem)
+                {
+                    m_onUpdate -= overlayGroupItem.Update;
+                }
+            };
+            overlayGroupsListView.bindItem = (e, i) =>
+            {
+                (e as OverlayGroupItem)?.Bind(m_tileSet, m_serializedTileSet.overlayGroups[i],
+                    () =>
+                    {
+                        if (i >= 0 && i < m_serializedTileSet.overlayGroups.Count)
+                        {
+                            m_serializedTileSet.overlayGroups.RemoveAt(i);
+                            hasUnsavedChanges = true;
+
+                            m_onOverlayGroupsChanged?.Invoke();
+                        }
+                    });
+            };
+
+            overlayGroupsListView.itemIndexChanged += (oldIndex, newIndex) =>
+            {
+                if (oldIndex != newIndex)
+                {
+                    hasUnsavedChanges = true;
+                }
+            };
+
+            addOverlayGroup.clicked += () =>
+            {
+                m_serializedTileSet.overlayGroups.Add(new SerializedOverlayGroup(Guid.NewGuid().ToString()));
+                overlayGroupsListView.itemsSource = m_serializedTileSet.overlayGroups;
+
+                m_onOverlayGroupsChanged?.Invoke();
+
+                hasUnsavedChanges = true;
+            };
+
+            m_onTileSetChanged += () =>
+            {
+                addTexture.SetEnabled(m_tileSet != null);
+
+                if (m_tileSet != null)
+                {
+                    emptySpriteRules.Bind(m_tileSet, m_serializedTileSet.emptySpriteRules);
+
+                    ruleGroupsListView.itemsSource = m_serializedTileSet.ruleGroups;
+                    ruleGroupsListView.Rebuild();
+
+                    overlayGroupsListView.itemsSource = m_serializedTileSet.overlayGroups;
+                    overlayGroupsListView.Rebuild();
+                }
+            };
+
+            m_onTilesDeleted += (tiles) =>
+            {
+                if (m_serializedTileSet.OnTilesDeleted(tiles)) 
+                {
+                    ruleGroupsListView.RefreshItems();
+                    overlayGroupsListView.RefreshItems();
+                }
+            };
+
+            m_onCategoriesDeleted += (categories) =>
+            {
+                if (m_serializedTileSet.OnCategoriesDeleted(categories))
+                {
+                    ruleGroupsListView.RefreshItems();
+                    overlayGroupsListView.RefreshItems();
+                }
+            };
+
+            m_onRuleGroupsChanged += () =>
+            {
+                ruleGroupsListView.Rebuild();
+            };
+
+            m_onOverlayGroupsChanged += () =>
+            {
+                overlayGroupsListView.Rebuild();
+            };
+
+            m_onTileSetValidated += () =>
+            {
+                ruleGroupsListView.itemsSource = m_serializedTileSet.ruleGroups;
+                ruleGroupsListView.Rebuild();
+
+                overlayGroupsListView.itemsSource = m_serializedTileSet.overlayGroups;
+                overlayGroupsListView.Rebuild();
+            };
+
+            m_onSaved += () =>
+            {
+                ruleGroupsListView.itemsSource = m_serializedTileSet.ruleGroups;
+                ruleGroupsListView.RefreshItems();
+
+                overlayGroupsListView.itemsSource = m_serializedTileSet.overlayGroups;
+                overlayGroupsListView.Rebuild();
+            };
+
+            return root;
+        }
+
+        private VisualElement CreateFoldout(VisualElement parent, string title, string foldoutStateCacheKey)
+        {
+            bool foldoutState = EditorPrefs.GetBool(foldoutStateCacheKey, true);
+
+            Foldout foldout = new Foldout();
+            foldout.text  = title;
+            foldout.value = foldoutState;
+            foldout.style.marginBottom      = 6.0f;
+            foldout.style.borderBottomWidth = 2.0f;
+            foldout.style.backgroundColor   = UIColors.pink;
+            foldout.style.borderBottomColor = UIColors.border;
+            parent.Add(foldout);
+
+            VisualElement container = new VisualElement();
+            container.style.paddingLeft   = 2.0f;
+            container.style.paddingRight  = 2.0f;
+            container.style.paddingTop    = 2.0f;
+            container.style.paddingBottom = 2.0f;
+            container.style.marginLeft    = 0.0f;
+            container.style.marginRight   = 0.0f;
+            container.style.marginTop     = 0.0f;
+            container.style.marginBottom  = 0.0f;
+            foldout.Add(container);
+
+            Label foldoutTitle = foldout.Q<Label>();
+            foldoutTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            Toggle foldoutToggle = foldout.Q<Toggle>();
+            foldoutToggle.style.marginLeft    = 0.0f;
+            foldoutToggle.style.marginRight   = 0.0f;
+            foldoutToggle.style.marginTop     = 0.0f;
+            foldoutToggle.style.marginBottom  = 0.0f;
+            foldoutToggle.style.paddingLeft   = 2.0f;
+            foldoutToggle.style.paddingRight  = 2.0f;
+            foldoutToggle.style.paddingTop    = 2.0f;
+            foldoutToggle.style.paddingBottom = 2.0f;
+
+            foldoutToggle.style.backgroundColor = UIColors.darken;
+
+            foldout.RegisterValueChangedCallback(e =>
+            {
+                EditorPrefs.SetBool(foldoutStateCacheKey, e.newValue);
+            });
+
+            return container;
+        }
+
+        private ListView CreateListView(VisualElement parent, string title, string toggleStateCacheKey, bool fixedSize)
+        {
+            ListView listView = new ListView();
+
+            if (string.IsNullOrEmpty(title))
+            {
+                listView.showFoldoutHeader = false;
+            }
+            else
+            {
+                listView.showFoldoutHeader = true;
+                listView.headerTitle = title;
             }
 
-            List<Texture2D> textureList = new List<Texture2D>();
-            foreach (UnityEngine.Object objectReference in DragAndDrop.objectReferences)
+            listView.showAddRemoveFooter = true;
+            listView.selectionType = SelectionType.None;
+            listView.showBoundCollectionSize = true;
+            listView.reorderable = true;
+            listView.reorderMode = ListViewReorderMode.Animated;
+            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.All;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.style.paddingBottom = 4.0f;
+
+            Toggle listViewToggle = listView.Q<Toggle>();
+            if (listViewToggle != null)
             {
-                if (objectReference is not Texture2D texture)
+                listViewToggle.style.backgroundColor = UIColors.darken;
+                listViewToggle.style.paddingTop = 2.0f;
+                listViewToggle.style.paddingBottom = 2.0f;
+                listViewToggle.RegisterValueChangedCallback(e =>
+                {
+                    EditorPrefs.SetBool(toggleStateCacheKey, e.newValue);
+                });
+            }
+
+            VisualElement listViewFooter = listView.Q<VisualElement>(name: "unity-list-view__footer");
+            if (listViewFooter != null)
+            {
+                if (fixedSize)
+                {
+                    listViewFooter.style.display = DisplayStyle.None;
+                }
+
+                listViewFooter.style.borderBottomLeftRadius  = 0.0f;
+                listViewFooter.style.borderBottomRightRadius = 0.0f;
+                listViewFooter.style.borderLeftWidth         = 0.0f;
+                listViewFooter.style.borderRightWidth        = 0.0f;
+                listViewFooter.style.borderBottomWidth       = 0.0f;
+                listViewFooter.style.paddingLeft             = 0.0f;
+                listViewFooter.style.paddingRight            = 0.0f;
+                listViewFooter.style.backgroundColor         = UIColors.darken;
+            
+                Button[] buttons = new Button[]
+                {
+                    listViewFooter.Q<Button>(name: "unity-list-view__add-button"),
+                    listViewFooter.Q<Button>(name: "unity-list-view__remove-button")
+                };
+
+                foreach (Button button in buttons)
+                {        
+                    button.style.width = 40.0f;
+                    button.style.borderBottomLeftRadius  = 0.0f;
+                    button.style.borderBottomRightRadius = 0.0f;
+                    button.style.borderTopLeftRadius     = 0.0f;
+                    button.style.borderTopRightRadius    = 0.0f;
+                    button.style.backgroundColor = UIColors.transparent;
+
+                    button.RegisterCallback<MouseEnterEvent>(evt => {
+                        button.style.backgroundColor = UIColors.brighten;
+                    });
+
+                    button.RegisterCallback<MouseLeaveEvent>(evt => {
+                        button.style.backgroundColor = UIColors.transparent;
+                    });
+                }
+            }
+
+            TextField listViewSizeField = listView.Q<TextField>(name: "unity-list-view__size-field");
+            if (fixedSize)
+            {
+                listViewSizeField?.SetEnabled(false);
+            }
+
+            listView.itemsSourceChanged += () =>
+            {
+                Toggle toggle = listView.Q<Toggle>();
+                if (toggle != null)
+                {
+                    toggle.value = EditorPrefs.GetBool(toggleStateCacheKey, true);
+                }
+            };
+
+            parent.Add(listView);
+
+            return listView;
+        }
+
+        private ScrollView CreateScrollView(VisualElement parent)
+        {
+            ScrollView scrollView = new ScrollView();
+            scrollView.style.flexGrow = 1.0f;
+            parent.Add(scrollView);
+            return scrollView;
+        }
+
+        private Texture2D m_selectedTexture;
+
+        private void WaitForObjectPicker()
+        {
+            if (Event.current == null || Event.current.type != EventType.ExecuteCommand)
+            {
+                return;
+            }
+
+            if (Event.current.commandName == "ObjectSelectorUpdated")
+            {
+                m_selectedTexture = EditorGUIUtility.GetObjectPickerObject() as Texture2D;
+            }
+
+            if (Event.current.commandName == "ObjectSelectorClosed")
+            {
+                AddTexture(m_selectedTexture);
+
+                m_selectedTexture = null;
+                m_onUpdate -= WaitForObjectPicker;
+            }
+        }
+
+        private void AddTexture(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            SerializedRuleGroup newRuleGroup = new SerializedRuleGroup(Guid.NewGuid().ToString());
+            newRuleGroup.texture = texture;
+
+            foreach (Sprite sprite in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(texture)).OfType<Sprite>())
+            {
+                SerializedTileRule newRule = new SerializedTileRule();
+                newRule.output.sprite = sprite;
+                newRuleGroup.rules.Add(newRule);
+            }
+
+            m_serializedTileSet.ruleGroups.Add(newRuleGroup);
+            m_onRuleGroupsChanged?.Invoke();
+
+            hasUnsavedChanges = true;
+        }
+
+        private void OnTileSetValidated(TileSet tileSet)
+        {
+            if (m_serializedTileSet.OnValidated(tileSet))
+            {
+                m_onTileSetValidated?.Invoke();
+            }
+        }
+
+        #endregion
+
+        #region TileSet
+
+        [SerializeField]
+        private TileSet m_tileSet;
+
+        [SerializeField]
+        private SerializedTileSet m_serializedTileSet = new SerializedTileSet();
+
+        private Action m_onTileSetChanged;
+        private Action m_onTilesChanged;
+        private Action m_onCategoriesChanged;
+        private Action m_onRuleGroupsChanged;
+        private Action m_onOverlayGroupsChanged;
+        private Action m_onTileSetValidated;
+
+        private Action<SerializedTile>          m_onTileNameChanged;
+        private Action<SerializedTile>          m_onTileColorChanged;
+        private Action<SerializedCategory>      m_onCategoryNameChanged;
+        private Action<SerializedCategory>      m_onCategoryColorChanged;
+        private Action<SerializedSpecialFilter> m_onFilterColorChanged;
+
+        private Action<IEnumerable<SerializedTile>>     m_onTilesDeleted;
+        private Action<IEnumerable<SerializedCategory>> m_onCategoriesDeleted;
+
+        private void OnTileSetChanged()
+        {
+            m_serializedTileSet.Update(m_tileSet);
+
+            m_onTileSetChanged?.Invoke();
+        }
+
+        [Serializable]
+        internal class SerializedTileSet
+        {
+            [SerializeField]
+            private TileSet m_tileSet;
+
+            [SerializeField]
+            private string m_buildId;
+
+            [SerializeField]
+            private List<SerializedTile> m_tiles;
+
+            [SerializeField]
+            private List<SerializedCategory> m_categories;
+
+            [SerializeField]
+            private List<SerializedSpecialFilter> m_specialFilters;
+
+            [SerializeField]
+            private List<SerializedRuleGroup> m_ruleGroups;
+
+            [SerializeField]
+            private List<SerializedOverlayGroup> m_overlayGroups;
+
+            [SerializeField]
+            private List<SerializedTileRule> m_emptySpriteRules;
+
+            public TileSet tileSet => m_tileSet;
+
+            public List<SerializedTile> tiles => m_tiles;
+
+            public List<SerializedCategory> categories => m_categories;
+
+            public List<SerializedSpecialFilter> specialFilters => m_specialFilters;
+
+            public List<SerializedRuleGroup> ruleGroups => m_ruleGroups;
+
+            public List<SerializedOverlayGroup> overlayGroups => m_overlayGroups;
+
+            public List<SerializedTileRule> emptySpriteRules => m_emptySpriteRules;
+
+            public void SaveChanges()
+            {
+                if (m_tileSet == null)
+                {
+                    return;
+                }
+
+                SerializedObject serializedObject = new SerializedObject(m_tileSet);
+
+                SerializedProperty buildIdProperty = serializedObject.FindProperty("m_newBuildId");
+                m_buildId = Guid.NewGuid().ToString();
+                buildIdProperty.stringValue = m_buildId;
+
+                SerializedProperty tilesProperty = serializedObject.FindProperty("m_tiles");
+                SyncTiles(tilesProperty);
+
+                SerializedProperty categoriesProperty = serializedObject.FindProperty("m_categories");
+                SyncCategories(categoriesProperty);
+
+                SerializedProperty specialFiltersProperty = serializedObject.FindProperty("m_specialFilters");
+                SyncSpecialFilters(specialFiltersProperty);
+
+                List<KeyValuePair<string, SerializedTileOutput>> decorators = new List<KeyValuePair<string, SerializedTileOutput>>();
+
+                SerializedProperty ruleGroupsProperty = serializedObject.FindProperty("m_ruleGroups");
+                SyncRuleGroups(ruleGroupsProperty, decorators);
+
+                SerializedProperty overlayGroupsProperty = serializedObject.FindProperty("m_overlayGroups");
+                SyncOverlayGroups(m_tileSet, overlayGroupsProperty);
+
+                SerializedProperty emptySpritesRulesProperty = serializedObject.FindProperty("m_emptySpriteRules");
+                SyncEmptySpriteRules(emptySpritesRulesProperty, decorators);
+
+                SerializedProperty decoratorsProperty = serializedObject.FindProperty("m_decorators");
+                SyncDecorators(decoratorsProperty, decorators);
+
+                serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                AssetDatabase.SaveAssets();
+            }
+
+            public void Update(TileSet tileSet)
+            {
+                m_tiles            ??= new List<SerializedTile>();
+                m_categories       ??= new List<SerializedCategory>();
+                m_specialFilters   ??= new List<SerializedSpecialFilter>();
+                m_ruleGroups       ??= new List<SerializedRuleGroup>();
+                m_overlayGroups    ??= new List<SerializedOverlayGroup>();
+                m_emptySpriteRules ??= new List<SerializedTileRule>();
+
+                if (m_tileSet != tileSet)
+                {
+                    m_tileSet = tileSet;
+
+                    m_tiles.Clear();
+                    m_categories.Clear();
+                    m_specialFilters.Clear();
+                    m_ruleGroups.Clear();
+                    m_overlayGroups.Clear();
+                    m_emptySpriteRules.Clear();
+
+                    if (m_tileSet != null)
+                    {
+                        SerializedObject serializedObject = new SerializedObject(m_tileSet);
+                        bool shouldSave = false;
+
+                        SerializedProperty idProperty = serializedObject.FindProperty("m_id");
+                        if (string.IsNullOrEmpty(idProperty.stringValue))
+                        {
+                            idProperty.stringValue = Guid.NewGuid().ToString();
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty buildIdProperty = serializedObject.FindProperty("m_newBuildId");
+                        m_buildId = buildIdProperty.stringValue;
+
+                        SerializedProperty tilesProperty = serializedObject.FindProperty("m_tiles");
+                        if (UpdateTiles(tilesProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty categoriesProperty = serializedObject.FindProperty("m_categories");
+                        if (UpdateCategories(categoriesProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty specialFiltersProperty = serializedObject.FindProperty("m_specialFilters");
+                        if (UpdateSpecialFilters(specialFiltersProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty ruleGroupsProperty = serializedObject.FindProperty("m_ruleGroups");
+                        if (UpdateRuleGroups(ruleGroupsProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty overlayGroupsProperty = serializedObject.FindProperty("m_overlayGroups");
+                        if (UpdateOverlayGroups(overlayGroupsProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        SerializedProperty emptySpriteRulesProperty = serializedObject.FindProperty("m_emptySpriteRules");
+                        if (UpdateEmptySpriteRules(emptySpriteRulesProperty))
+                        {
+                            shouldSave = true;
+                        }
+
+                        if (shouldSave)
+                        {
+                            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                        }
+                    }
+                }
+            }
+
+            public bool OnValidated(TileSet tileSet)
+            {
+                if (m_tileSet != tileSet || m_tileSet == null)
                 {
                     return false;
                 }
-                textureList.Add(texture);
-            }
 
-            textures = textureList.ToArray();
-            return true;
-        }
-    }
-
-    internal class TextureDisplay : VisualElement
-    {
-        private SerializedProperty m_spriteEntriesProperty;
-
-        private Texture2D    m_texture;
-        private Sprite[]     m_sprites;
-        private PaintControl m_paintControl;
-
-        private Action    m_onRemove;
-        private Action    m_onSize;
-
-        private float m_scale;
-
-        private VisualElement m_texContainer;
-
-        private List<SpriteDisplay> m_elements = new List<SpriteDisplay>();
-
-        private Texture2D m_lockIconTexture;
-
-        public event Action<float> onScale;
-
-        public PaintControl paintControl
-        {
-            get => m_paintControl;
-            set
-            {
-                m_paintControl = value;
-                foreach (SpriteDisplay spriteDisplay in m_elements)
+                for (int i = m_ruleGroups.Count - 1; i >= 0; i--)
                 {
-                    spriteDisplay.paintControl = m_paintControl;
-                }
-            }
-        }
+                    SerializedRuleGroup ruleGroup = m_ruleGroups[i];
 
-        public Texture2D lockIconTexture
-        {
-            get => m_lockIconTexture;
-            set
-            {
-                m_lockIconTexture = value;
-                foreach (SpriteDisplay spriteDisplay in m_elements)
-                {
-                    spriteDisplay.lockIconTexture = m_lockIconTexture;
-                }
-            }
-        }
-
-        public void UpdateFields()
-        {
-            foreach (SpriteDisplay spriteDisplay in m_elements)
-            {
-                spriteDisplay.UpdateFields();
-            }
-        }
-
-        public void Scale(float scale)
-        {
-            float ppu = m_sprites[0]?.pixelsPerUnit ?? 32.0f;
-
-            m_scale = scale;
-            m_texContainer.style.width  = m_texture.width * m_scale * 32.0f / ppu;
-            m_texContainer.style.height = m_texture.height * m_scale * 32.0f / ppu;
-            onScale?.Invoke(m_scale);
-        }
-
-        public void OnBrushTypeChanged(PaintControl.BrushType brushType)
-        {
-            foreach (SpriteDisplay spriteDisplay in m_elements)
-            {
-                spriteDisplay.OnBrushTypeChanged(brushType);
-            }
-        }
-
-        public TextureDisplay(Texture2D texture, Action onRemove, Action onSize, float initialScale, SerializedProperty spriteEntriesProperty)
-        {
-            m_spriteEntriesProperty = spriteEntriesProperty;
-
-            m_texture  = texture;
-            m_sprites = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(texture)).OfType<Sprite>().ToArray();
-
-            m_onRemove = onRemove;
-            m_onSize   = onSize;
-
-            m_scale = initialScale;
-
-            AddToClassList("dark-gray");
-            AddToClassList("enclosed");
-
-            Rebuild();
-        }
-
-        private void Rebuild()
-        {
-            Clear();
-            m_elements.Clear();
-            onScale = null;
-
-            float ppu = m_sprites[0]?.pixelsPerUnit ?? 32.0f;
-
-            VisualElement container = new VisualElement();
-            container.style.flexDirection = FlexDirection.Row;
-            Add(container);
-
-            Foldout foldout = new Foldout()
-            {
-                text = m_texture.name,
-                value = EditorPrefs.GetBool($"Zlitz.Extra2D.BetterTile.textureFoldout_{m_texture.name}", true)
-            };
-            foldout.style.flexGrow = 1.0f;
-            foldout.style.height = StyleKeyword.Auto;
-            foldout.style.overflow = Overflow.Hidden;
-            foldout.style.alignItems = Align.Stretch;
-            foldout.RegisterValueChangedCallback(e =>
-            {
-                EditorPrefs.SetBool($"Zlitz.Extra2D.BetterTile.textureFoldout_{m_texture.name}", e.newValue);
-                m_onSize?.Invoke();
-            });
-            container.Add(foldout);
-            onScale += (s) =>
-            {
-                foldout.MarkDirtyRepaint();
-            };
-
-            Button removeButton = new Button()
-            {
-                text = "\u0058"
-            };
-            removeButton.AddToClassList("remove-button");
-            removeButton.clicked += m_onRemove;
-            removeButton.style.width = 24.0f;
-            removeButton.style.height = 24.0f;
-            container.Add(removeButton);
-
-            m_texContainer = new VisualElement();
-            m_texContainer.style.marginBottom = 8.0f;
-            m_texContainer.style.marginTop = 8.0f;
-            m_texContainer.style.marginLeft = 8.0f;
-            m_texContainer.style.marginRight = 8.0f;
-            m_texContainer.style.borderBottomColor = new Color(0.77f, 0.77f, 0.77f, 1.0f);
-            m_texContainer.style.borderTopColor = new Color(0.77f, 0.77f, 0.77f, 1.0f);
-            m_texContainer.style.borderLeftColor = new Color(0.77f, 0.77f, 0.77f, 1.0f);
-            m_texContainer.style.borderRightColor = new Color(0.77f, 0.77f, 0.77f, 1.0f);
-            m_texContainer.style.borderBottomWidth = 1.0f;
-            m_texContainer.style.borderTopWidth = 1.0f;
-            m_texContainer.style.borderLeftWidth = 1.0f;
-            m_texContainer.style.borderRightWidth = 1.0f;
-            m_texContainer.style.width = m_texture.width * m_scale * 32.0f / ppu;
-            m_texContainer.style.height = m_texture.height * m_scale  * 32.0f / ppu;
-            m_texContainer.style.flexGrow = 0.0f;
-            m_texContainer.style.flexShrink = 0.0f;
-            m_texContainer.style.backgroundColor = new Color(0.28f, 0.28f, 0.28f, 1.0f);
-            foldout.Add(m_texContainer);
-
-            VisualElement tex = new VisualElement();
-            tex.style.flexGrow = 1.0f;
-            tex.style.backgroundImage = m_texture;
-            m_texContainer.Add(tex);
-
-            foreach (Sprite sprite in m_sprites)
-            {
-                SerializedProperty matchingSpriteEntryProperty = null;
-
-                for (int i = 0; i < m_spriteEntriesProperty.arraySize; i++)
-                {
-                    SerializedProperty entryProperty = m_spriteEntriesProperty.GetArrayElementAtIndex(i);
-
-                    SerializedProperty spriteProperty = entryProperty.FindPropertyRelative("m_sprite");
-                    Sprite currentSprite = spriteProperty.objectReferenceValue as Sprite;
-
-                    if (currentSprite == sprite)
+                    if (ruleGroup.texture == null)
                     {
-                        matchingSpriteEntryProperty = entryProperty;
+                        m_ruleGroups.RemoveAt(i);
+                        continue;
+                    }
+                }
+
+                return true;
+            }
+
+            public bool OnTilesDeleted(IEnumerable<SerializedTile> tiles)
+            {
+                bool changed = false;
+
+                foreach (SerializedRuleGroup ruleGroup in m_ruleGroups)
+                {
+                    if (ruleGroup.OnTilesDeleted(tiles))
+                    {
+                        changed = true;
+                    }
+                }
+                foreach (SerializedOverlayGroup overlayGroup in m_overlayGroups)
+                {
+                    if (overlayGroup.OnTilesDeleted(tiles))
+                    {
+                        changed = true;
+                    }
+                }
+
+                return changed;
+            }
+
+            public bool OnCategoriesDeleted(IEnumerable<SerializedCategory> categories)
+            {
+                bool changed = false;
+
+                foreach (SerializedRuleGroup ruleGroup in m_ruleGroups)
+                {
+                    if (ruleGroup.OnCategoriesDeleted(categories))
+                    {
+                        changed = true;
+                    }
+                }
+                foreach (SerializedOverlayGroup overlayGroup in m_overlayGroups)
+                {
+                    if (overlayGroup.OnCategoriesDeleted(categories))
+                    {
+                        changed = true;
+                    }
+                }
+
+                return changed;
+            }
+
+            private bool UpdateTiles(SerializedProperty tilesProperty)
+            {
+                bool shouldSave = false;
+
+                for (int i = 0; i < tilesProperty.arraySize; i++)
+                {
+                    Tile tile = tilesProperty.GetArrayElementAtIndex(i).objectReferenceValue as Tile;
+                    if (tile != null)
+                    {
+                        SerializedTile serializedTile = new SerializedTile();
+                        if (serializedTile.Update(tile))
+                        {
+                            shouldSave = true;
+                        }
+
+                        m_tiles.Add(serializedTile);
+                    }
+                }
+
+                return shouldSave;
+            }
+
+            private bool UpdateCategories(SerializedProperty categoriesProperty)
+            {
+                bool shouldSave = false;
+
+                for (int i = 0; i < categoriesProperty.arraySize; i++)
+                {
+                    TileCategory category = categoriesProperty.GetArrayElementAtIndex(i).objectReferenceValue as TileCategory;
+                    if (category != null)
+                    {
+                        SerializedCategory serializedCategory = new SerializedCategory();
+                        if (serializedCategory.Update(category))
+                        {
+                            shouldSave = true;
+                        }
+
+                        m_categories.Add(serializedCategory);
+                    }
+                }
+
+                return shouldSave;
+            }
+
+            private bool UpdateSpecialFilters(SerializedProperty specialFiltersProperty)
+            {
+                bool shouldSave = false;
+
+                HashSet<TileFilterType> requiredFilterTypes = TileFilterTypes.specialFilterTypes.ToHashSet();
+                List<int> obsoleteFilterIndices = new List<int>();
+
+                for (int i = 0; i < specialFiltersProperty.arraySize; i++)
+                {
+                    SerializedProperty specialFilterProperty = specialFiltersProperty.GetArrayElementAtIndex(i);
+
+                    SerializedProperty filterTypeProperty = specialFilterProperty.FindPropertyRelative("m_type");
+                    TileFilterType filterType = (TileFilterType)filterTypeProperty.enumValueIndex;
+                    if (!requiredFilterTypes.Remove(filterType))
+                    {
+                        shouldSave = true;
+                        obsoleteFilterIndices.Add(i);
+                        continue;
+                    }
+
+                    SerializedSpecialFilter serializedSpecialFilter = new SerializedSpecialFilter();
+                    if (serializedSpecialFilter.Update(specialFilterProperty))
+                    {
+                        shouldSave = true;
+                    }
+
+                    m_specialFilters.Add(serializedSpecialFilter);
+                }
+
+                for (int i = obsoleteFilterIndices.Count - 1; i >= 0; i--)
+                {
+                    int index = obsoleteFilterIndices[i];
+                    specialFiltersProperty.DeleteArrayElementAtIndex(index);
+                }
+
+                foreach (TileFilterType missingFilterType in requiredFilterTypes)
+                {
+                    shouldSave = true;
+
+                    SerializedSpecialFilter filter = new SerializedSpecialFilter();
+                    filter.filterType = missingFilterType;
+                    filter.filterColor = Color.black;
+
+                    m_specialFilters.Add(filter);
+
+                    specialFiltersProperty.arraySize++;
+                    SerializedProperty newFilterProperty = specialFiltersProperty.GetArrayElementAtIndex(specialFiltersProperty.arraySize - 1);
+
+                    SerializedProperty newFilterTypeProperty = newFilterProperty.FindPropertyRelative("m_type");
+                    newFilterTypeProperty.enumValueIndex = (int)missingFilterType;
+
+                    SerializedProperty newFilterColorProperty = newFilterProperty.FindPropertyRelative("m_color");
+                    newFilterColorProperty.colorValue = Color.black;
+                }
+
+                return shouldSave;
+            }
+
+            private bool UpdateRuleGroups(SerializedProperty ruleGroupsProperty)
+            {
+                bool shouldSave = false;
+
+                for (int i = 0; i < ruleGroupsProperty.arraySize; i++)
+                {
+                    SerializedProperty ruleGroupProperty = ruleGroupsProperty.GetArrayElementAtIndex(i);
+
+                    SerializedRuleGroup serializedRuleGroup = new SerializedRuleGroup();
+                    if (serializedRuleGroup.Update(ruleGroupProperty))
+                    {
+                        shouldSave = true;
+                    }
+
+                    m_ruleGroups.Add(serializedRuleGroup);
+                }
+
+                return shouldSave;
+            }
+
+            private bool UpdateOverlayGroups(SerializedProperty overlayGroupsProperty)
+            {
+                bool shouldSave = false;
+
+                for (int i = 0; i < overlayGroupsProperty.arraySize; i++)
+                {
+                    SerializedProperty overlayGroupProperty = overlayGroupsProperty.GetArrayElementAtIndex(i);
+
+                    SerializedOverlayGroup serializedOverlayGroup = new SerializedOverlayGroup();
+                    if (serializedOverlayGroup.Update(overlayGroupProperty))
+                    {
+                        shouldSave = true;
+                    }
+
+                    m_overlayGroups.Add(serializedOverlayGroup);
+                }
+
+                return shouldSave;
+            }
+
+            private bool UpdateEmptySpriteRules(SerializedProperty emptySpriteRulesProperty)
+            {
+                bool shouldSave = false;
+
+                for (int i = 0; i < emptySpriteRulesProperty.arraySize; i++)
+                {
+                    SerializedProperty ruleProperty = emptySpriteRulesProperty.GetArrayElementAtIndex(i);
+
+                    SerializedTileRule serializedRule = new SerializedTileRule();
+                    if (serializedRule.Update(ruleProperty))
+                    {
+                        shouldSave = true;
+                    }
+
+                    m_emptySpriteRules.Add(serializedRule);
+                }
+
+                return shouldSave;
+            }
+
+            private void SyncTiles(SerializedProperty tilesProperty)
+            {
+                // Obtain existing tiles
+                HashSet<Tile> oldTiles = new HashSet<Tile>();
+                for (int i = 0; i < tilesProperty.arraySize; i++)
+                {
+                    Tile tile = tilesProperty.GetArrayElementAtIndex(i).objectReferenceValue as Tile;
+                    if (tile != null)
+                    {
+                        oldTiles.Add(tile);
+                    }
+                }
+
+                // Remove nulls
+                m_tiles = tiles.Where(t => t?.tile != null).ToList();
+
+                // Save each tile as a sub-asset if not already
+                foreach (SerializedTile t in m_tiles)
+                {
+                    t.SaveChanges();
+
+                    oldTiles.Remove(t.tile);
+                    if (AssetDatabase.Contains(t.tile))
+                    {
+                        continue;
+                    }
+
+                    AssetDatabase.AddObjectToAsset(t.tile, m_tileSet);
+                }
+
+                // Destroy unused tiles
+                foreach (Tile oldTile in oldTiles)
+                {
+                    DestroyImmediate(oldTile, true);
+                }
+
+                // Save changes to serialized property
+                tilesProperty.arraySize = m_tiles.Count;
+                for (int i = 0; i < m_tiles.Count; i++)
+                {
+                    SerializedProperty tileProperty = tilesProperty.GetArrayElementAtIndex(i);
+                    tileProperty.objectReferenceValue = m_tiles[i].tile;
+                }
+            }
+        
+            private void SyncCategories(SerializedProperty categoriesProperty)
+            {
+                // Obtain existing categories
+                HashSet<TileCategory> oldCategories = new HashSet<TileCategory>();
+                for (int i = 0; i < categoriesProperty.arraySize; i++)
+                {
+                    TileCategory category = categoriesProperty.GetArrayElementAtIndex(i).objectReferenceValue as TileCategory;
+                    if (category != null)
+                    {
+                        oldCategories.Add(category);
+                    }
+                }
+
+                // Remove nulls
+                m_categories = m_categories.Where(c => c?.category != null).ToList();
+
+                // Save each category as a sub-asset if not already
+                foreach (SerializedCategory c in m_categories)
+                {
+                    c.SaveChanges();
+
+                    oldCategories.Remove(c.category);
+                    if (AssetDatabase.Contains(c.category))
+                    {
+                        continue;
+                    }
+
+                    AssetDatabase.AddObjectToAsset(c.category, m_tileSet);
+                }
+
+                // Destroy unused tiles
+                foreach (TileCategory oldCategory in oldCategories)
+                {
+                    DestroyImmediate(oldCategory, true);
+                }
+
+                // Save changes to serialized property
+                categoriesProperty.arraySize = m_categories.Count;
+                for (int i = 0; i < m_categories.Count; i++)
+                {
+                    SerializedProperty categoryProperty = categoriesProperty.GetArrayElementAtIndex(i);
+                    categoryProperty.objectReferenceValue = m_categories[i].category;
+                }
+            }
+        
+            private void SyncSpecialFilters(SerializedProperty specialFiltersProperty)
+            {
+                specialFiltersProperty.arraySize = m_specialFilters.Count;
+                for (int i = 0; i < m_specialFilters.Count; i++)
+                {
+                    SerializedProperty specialFilterProperty = specialFiltersProperty.GetArrayElementAtIndex(i);
+                    m_specialFilters[i].SaveChanges(specialFilterProperty);
+                }
+            }
+        
+            private void SyncRuleGroups(SerializedProperty ruleGroupsProperty, List<KeyValuePair<string, SerializedTileOutput>> decorators)
+            {
+                ruleGroupsProperty.arraySize = m_ruleGroups.Count;
+                for (int i = 0; i < m_ruleGroups.Count; i++)
+                {
+                    SerializedProperty ruleGroupProperty = ruleGroupsProperty.GetArrayElementAtIndex(i);
+                    m_ruleGroups[i].SaveChanges(ruleGroupProperty);
+
+                    string id = m_ruleGroups[i].id;
+
+                    foreach (SerializedTileRule rule in m_ruleGroups[i].rules)
+                    {
+                        if (!rule.identity.IsDecorator())
+                        {
+                            continue;
+                        }
+
+                        Sprite sprite = rule.output.sprite;
+                        decorators.Add(new KeyValuePair<string, SerializedTileOutput>(id, rule.output));
+                    }
+                }
+            }
+
+            private void SyncOverlayGroups(TileSet tileSet, SerializedProperty overlayGroupsProperty)
+            {
+                overlayGroupsProperty.arraySize = m_overlayGroups.Count;
+                for (int i = 0; i < m_overlayGroups.Count; i++)
+                {
+                    SerializedProperty overlayGroupProperty = overlayGroupsProperty.GetArrayElementAtIndex(i);
+                    m_overlayGroups[i].SaveChanges(tileSet, overlayGroupProperty);
+                }
+            }
+
+            private void SyncEmptySpriteRules(SerializedProperty emptySpriteRulesProperty, List<KeyValuePair<string, SerializedTileOutput>> decorators)
+            {
+                emptySpriteRulesProperty.arraySize = m_emptySpriteRules.Count;
+                for (int i = 0; i < m_emptySpriteRules.Count; i++)
+                {
+                    m_emptySpriteRules[i].output.sprite = null;
+                    
+                    SerializedProperty ruleProperty = emptySpriteRulesProperty.GetArrayElementAtIndex(i);
+                    m_emptySpriteRules[i].SaveChanges(ruleProperty);
+
+                    if (m_emptySpriteRules[i].identity.IsDecorator())
+                    {
+                        decorators.Add(new KeyValuePair<string, SerializedTileOutput>($"empty.{i}", m_emptySpriteRules[i].output));
+                    }
+                }
+            }
+
+            private void SyncDecorators(SerializedProperty decoratorsProperty, IEnumerable<KeyValuePair<string, SerializedTileOutput>> decorators)
+            {
+                HashSet<SimpleTile> oldDecorators = new HashSet<SimpleTile>();
+                for (int i = 0; i < decoratorsProperty.arraySize; i++)
+                {
+                    SimpleTile decorator = decoratorsProperty.GetArrayElementAtIndex(i).objectReferenceValue as SimpleTile;
+                    if (decorator != null)
+                    {
+                        oldDecorators.Add(decorator);
+                    }
+                }
+
+                List<SimpleTile> newDecorators = new List<SimpleTile>();
+                foreach (KeyValuePair<string, SerializedTileOutput> newDecorator in decorators)
+                {
+                    string id = newDecorator.Key;
+
+                    SerializedTileOutput output = newDecorator.Value;
+                
+                    SimpleTile decorator = oldDecorators.FirstOrDefault(d => CompareDecorator(d, id, output.sprite));
+                    if (decorator != null)
+                    {
+                        oldDecorators.Remove(decorator);
+                    }
+                    else
+                    {
+                        decorator = CreateInstance<SimpleTile>();
+                        decorator.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+                        AssetDatabase.AddObjectToAsset(decorator, m_tileSet);
+                    }
+                    newDecorators.Add(decorator);
+
+                    SerializedObject serializedObject = new SerializedObject(decorator);
+
+                    SerializedProperty idProperty = serializedObject.FindProperty("m_id");
+                    idProperty.stringValue = id;
+
+                    SerializedProperty colliderTypeProperty = serializedObject.FindProperty("m_colliderType");
+                    colliderTypeProperty.enumValueIndex = (int)UnityTile.ColliderType.None;
+
+                    SerializedProperty outputProperty = serializedObject.FindProperty("m_output");
+                    output.SaveChanges(outputProperty);
+
+                    serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                }
+
+                foreach (SimpleTile oldDecorator in oldDecorators)
+                {
+                    DestroyImmediate(oldDecorator, true);
+                }
+
+                decoratorsProperty.arraySize = newDecorators.Count;
+                for (int i = 0; i < newDecorators.Count; i++)
+                {
+                    decoratorsProperty.GetArrayElementAtIndex(i).objectReferenceValue = newDecorators[i];
+                }
+            }
+
+            private bool CompareDecorator(SimpleTile decorator, string id, Sprite sprite)
+            {
+                if (decorator == null)
+                {
+                    return false;
+                }
+
+                SerializedObject serializedObject = new SerializedObject(decorator);
+
+                SerializedProperty idProperty = serializedObject.FindProperty("m_id");
+                if (idProperty.stringValue != id)
+                {
+                    return false;
+                }
+
+                SerializedProperty spriteProperty = serializedObject.FindProperty("m_output").FindPropertyRelative("m_sprite");
+                if (spriteProperty.objectReferenceValue as Sprite != sprite)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        #endregion
+
+        #region Painting
+
+        private PaintContext m_paintContext;
+
+        [SerializeField]
+        private BrushInfo m_brush;
+        
+        [Serializable]
+        internal struct BrushInfo
+        {
+            [SerializeField]
+            private BrushType m_brushType;
+
+            [SerializeField]
+            private TileFilterType m_filterType;
+
+            [SerializeField]
+            private Tile m_tile;
+
+            [SerializeField]
+            private TileCategory m_category;
+
+            [SerializeField]
+            private float m_weight;
+
+            public BrushType brushType => m_brushType;
+
+            public float weight => m_weight;
+
+            public TileFilterType filterType => m_filterType;
+
+            public Tile tile => m_tile;
+
+            public TileCategory category => m_category;
+
+            public void SetBrushType(PaintContext context, BrushType brushType)
+            {
+                m_brushType = brushType;
+                context.UpdateBrush(this);
+            }
+
+            public void SetTile(PaintContext context, Tile tile)
+            {
+                m_filterType = TileFilterType.Tile;
+                m_tile = tile;
+                context.UpdateBrush(this);
+            }
+
+            public void SetCategory(PaintContext context, TileCategory category)
+            {
+                m_filterType = TileFilterType.TileCategory;
+                m_category = category;
+                context.UpdateBrush(this);
+            }
+
+            public void SetSpecialFilter(PaintContext context, TileFilterType filterType)
+            {
+                m_filterType = filterType;
+                context.UpdateBrush(this);
+            }
+        
+            public void SetWeight(PaintContext context, float weight)
+            {
+                m_weight = weight;
+                context.UpdateBrush(this);
+            }
+
+            public void OnTileSetChanged(PaintContext context, SerializedTileSet serializedTileSet)
+            {
+                bool containsTile = false;
+                foreach (SerializedTile tile in serializedTileSet.tiles)
+                {
+                    if (tile.tile == m_tile)
+                    {
+                        containsTile = true;
                         break;
                     }
                 }
-
-                Debug.Assert(matchingSpriteEntryProperty != null, "No matching sprite entry available.");
-
-                SpriteDisplay spriteDisplay = new SpriteDisplay(sprite, this, m_scale, matchingSpriteEntryProperty, m_paintControl);
-                spriteDisplay.lockIconTexture = m_lockIconTexture;
-                tex.Add(spriteDisplay);
-                m_elements.Add(spriteDisplay);
-            }
-        }
-    }
-
-    internal class SpriteDisplay : VisualElement
-    {
-        private Sprite       m_sprite;
-        private Texture2D    m_texture;
-        private PaintControl m_paintControl;
-
-        private VisualElement m_tileOutline;
-
-        private VisualElement m_tilePainting;
-        private VisualElement m_connectionPainting;
-        private VisualElement m_weightPainting;
-
-        private Label       m_weightDisplay;
-        private RuleDisplay m_ruleDisplay;
-
-        private SerializedProperty m_entryProperty;
-
-        private SerializedProperty m_spriteProperty;
-        private SerializedProperty m_tileProperty;
-        private SerializedProperty m_ruleProperty;
-        private SerializedProperty m_weightProperty;
-
-        private Texture2D m_lockIconTexture;
-
-        public PaintControl paintControl
-        {
-            get => m_paintControl;
-            set
-            {
-                m_paintControl = value;
-                if (m_paintControl != null)
+                if (!containsTile)
                 {
-                    OnBrushTypeChanged(paintControl.brushType);
+                    m_tile = null;
                 }
-                m_ruleDisplay.paintControl = m_paintControl;
+
+                bool containsCategory = false;
+                foreach (SerializedCategory category in serializedTileSet.categories)
+                {
+                    if (category.category == m_category)
+                    {
+                        containsCategory = true;
+                        break;
+                    }
+                }
+                if (!containsCategory)
+                {
+                    m_category = null;
+                }
+
+                if (m_filterType != TileFilterType.Tile && m_filterType != TileFilterType.TileCategory)
+                {
+                    TileFilterType oldFilterType = m_filterType;
+                    SetTile(context, null);
+                    SetSpecialFilter(context, oldFilterType);
+                }
+                else
+                {
+                    context.UpdateBrush(this);
+                }
             }
         }
 
-        public Texture2D lockIconTexture
+        internal enum BrushType
         {
-            get => m_lockIconTexture;
-            set
-            {
-                m_lockIconTexture = value;
-                m_ruleDisplay.lockIconTexture = m_lockIconTexture;
-            }
-        }
-
-        public void OnBrushTypeChanged(PaintControl.BrushType brushType)
-        {
-            m_tilePainting.style.display       = brushType == PaintControl.BrushType.Tile ? DisplayStyle.Flex : DisplayStyle.None;
-            m_connectionPainting.style.display = brushType == PaintControl.BrushType.Connection ? DisplayStyle.Flex : DisplayStyle.None;
-            m_weightPainting.style.display     = brushType == PaintControl.BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        public void UpdateFields()
-        {
-            Color tileColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_tileProperty.objectReferenceValue is UnityEngine.Object obj)
-            {
-                tileColor = new SerializedObject(obj).FindProperty("m_color").colorValue;
-                tileColor.a = 0.5f;
-            }
-
-            m_tilePainting.style.backgroundColor   = tileColor;
-            m_weightPainting.style.backgroundColor = tileColor;
-
-            m_ruleDisplay.UpdateFields();
-
-            m_weightDisplay.text = WeightToString(m_weightProperty.floatValue);
-        }
-
-        public SpriteDisplay(Sprite sprite, TextureDisplay textureDisplay, float initialScale, SerializedProperty entryProperty, PaintControl paintControl)
-        {
-            m_sprite  = sprite;
-            m_texture = m_sprite.texture;
-
-            m_paintControl = paintControl;
-            if (m_paintControl != null)
-            {
-                OnBrushTypeChanged(paintControl.brushType);
-            }
-
-            m_entryProperty = entryProperty;
-
-            m_spriteProperty = m_entryProperty.FindPropertyRelative("m_sprite");
-            m_tileProperty   = m_entryProperty.FindPropertyRelative("m_tile");
-            m_ruleProperty   = m_entryProperty.FindPropertyRelative("m_rule");
-            m_weightProperty = m_entryProperty.FindPropertyRelative("m_weight");
-
-            Rect  spriteRect = m_sprite.rect;
-            float ppu        = m_sprite.pixelsPerUnit;
-
-            style.borderBottomWidth = 1.0f;
-            style.borderTopWidth    = 1.0f;
-            style.borderLeftWidth   = 1.0f;
-            style.borderRightWidth  = 1.0f;
-
-            style.borderBottomColor = new Color(0.0f, 1.0f, 0.0f, 0.3f);
-            style.borderTopColor    = new Color(0.0f, 1.0f, 0.0f, 0.3f);
-            style.borderLeftColor   = new Color(0.0f, 1.0f, 0.0f, 0.3f);
-            style.borderRightColor  = new Color(0.0f, 1.0f, 0.0f, 0.3f);
-
-            style.position = Position.Absolute;
-
-            style.top    = initialScale * 32.0f / ppu * (m_texture.height - spriteRect.height - spriteRect.y);
-            style.left   = initialScale * 32.0f / ppu * spriteRect.x;
-            style.width  = initialScale * 32.0f / ppu * spriteRect.width;
-            style.height = initialScale * 32.0f / ppu * spriteRect.height;
-
-            Vector2 pivot = sprite.pivot;
-
-            m_tileOutline = new VisualElement();
-
-            m_tileOutline.style.borderBottomWidth = 1.0f;
-            m_tileOutline.style.borderTopWidth    = 1.0f;
-            m_tileOutline.style.borderLeftWidth   = 1.0f;
-            m_tileOutline.style.borderRightWidth  = 1.0f;
-
-            m_tileOutline.style.borderBottomColor = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-            m_tileOutline.style.borderTopColor    = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-            m_tileOutline.style.borderLeftColor   = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-            m_tileOutline.style.borderRightColor  = new Color(1.0f, 1.0f, 0.0f, 1.0f);
-
-            m_tileOutline.style.position = Position.Absolute;
-
-            m_tileOutline.style.top    = initialScale * 32.0f / ppu * (spriteRect.height - pivot.y - 0.5f * ppu);
-            m_tileOutline.style.left   = initialScale * 32.0f / ppu * (pivot.x - 0.5f * ppu);
-            m_tileOutline.style.width  = initialScale * 32.0f / ppu * ppu;
-            m_tileOutline.style.height = initialScale * 32.0f / ppu * ppu;
-
-            Add(m_tileOutline);
-
-            m_tilePainting = new VisualElement();
-            m_tilePainting.style.position          = Position.Absolute;
-            m_tilePainting.style.width             = Length.Percent(100.0f);
-            m_tilePainting.style.height            = Length.Percent(100.0f);
-            m_tilePainting.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_tilePainting.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_tilePainting.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_tilePainting.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-
-            m_tilePainting.RegisterCallback<MouseEnterEvent>(e =>
-            {
-                m_tilePainting.style.borderBottomWidth = 2.0f;
-                m_tilePainting.style.borderTopWidth    = 2.0f;
-                m_tilePainting.style.borderLeftWidth   = 2.0f;
-                m_tilePainting.style.borderRightWidth  = 2.0f;
-
-                if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingTile != null && m_paintControl.paintingTile is UnityEngine.Object tile)
-                {
-                    if (m_tileProperty.objectReferenceValue != tile)
-                    {
-                        m_tileProperty.objectReferenceValue = tile;
-                        m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-
-                        if (tile is TileDecorator decorator)
-                        {
-                            Sprite decoratorSprite = m_spriteProperty.objectReferenceValue as Sprite;
-
-                            DecoratorTile decoratorTile = DecoratorTile.Create(decoratorSprite);
-                            decoratorTile.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                            decoratorTile.name = $"Decorator_{decoratorSprite.name}";
-
-                            AssetDatabase.AddObjectToAsset(decoratorTile, decorator);
-
-                            SerializedObject serializedDecorator = new SerializedObject(decorator);
-
-                            SerializedProperty tilesProperty = serializedDecorator.FindProperty("m_tiles");
-
-                            int index = tilesProperty.arraySize;
-                            tilesProperty.InsertArrayElementAtIndex(index);
-
-                            SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
-                            newTileProperty.objectReferenceValue = decoratorTile;
-
-                            serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
-
-                            EditorUtility.SetDirty(decorator);
-                            AssetDatabase.SaveAssetIfDirty(decorator);
-                        }
-                    }
-                }
-            });
-            m_tilePainting.RegisterCallback<MouseLeaveEvent>(e =>
-            {
-                m_tilePainting.style.borderBottomWidth = 0.0f;
-                m_tilePainting.style.borderTopWidth    = 0.0f;
-                m_tilePainting.style.borderLeftWidth   = 0.0f;
-                m_tilePainting.style.borderRightWidth  = 0.0f;
-            });
-            m_tilePainting.RegisterCallback<MouseDownEvent>(e =>
-            {
-                if (e.button == 0 && !e.shiftKey)
-                {
-                    if (m_paintControl != null && m_paintControl.paintingTile != null && m_paintControl.paintingTile is UnityEngine.Object tile)
-                    {
-                        if (m_tileProperty.objectReferenceValue != tile)
-                        {
-                            m_tileProperty.objectReferenceValue = tile;
-                            m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                            UpdateFields();
-
-                            if (tile is TileDecorator decorator)
-                            {
-                                Sprite decoratorSprite = m_spriteProperty.objectReferenceValue as Sprite;
-
-                                DecoratorTile decoratorTile = DecoratorTile.Create(decoratorSprite);
-                                decoratorTile.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                                decoratorTile.name = $"Decorator_{decoratorSprite.name}";
-
-                                AssetDatabase.AddObjectToAsset(decoratorTile, decorator);
-
-                                SerializedObject serializedDecorator = new SerializedObject(decorator);
-
-                                SerializedProperty tilesProperty = serializedDecorator.FindProperty("m_tiles");
-
-                                int index = tilesProperty.arraySize;
-                                tilesProperty.InsertArrayElementAtIndex(index);
-
-                                SerializedProperty newTileProperty = tilesProperty.GetArrayElementAtIndex(index);
-                                newTileProperty.objectReferenceValue = decoratorTile;
-
-                                serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
-
-                                EditorUtility.SetDirty(decorator);
-                                AssetDatabase.SaveAssetIfDirty(decorator);
-                            }
-                        }
-                    }
-                }
-                else if (e.button == 0 && e.shiftKey)
-                {
-                    TileDecorator decorator = m_tileProperty.objectReferenceValue as TileDecorator;
-
-                    m_tileProperty.objectReferenceValue = null;
-                    m_tileProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-
-                    if (decorator != null)
-                    {
-                        Sprite decoratorSprite = m_spriteProperty.objectReferenceValue as Sprite;
-
-                        SerializedObject serializedDecorator = new SerializedObject(decorator);
-
-                        SerializedProperty tilesProperty = serializedDecorator.FindProperty("m_tiles");
-
-                        int index = -1;
-                        DecoratorTile tileToRemove = null;
-                        for (int i = 0; i < tilesProperty.arraySize; i++)
-                        {
-                            SerializedProperty tileProperty = tilesProperty.GetArrayElementAtIndex(i);
-                            DecoratorTile tile = tileProperty.objectReferenceValue as DecoratorTile;
-                            if (tile != null && tile.sprite == decoratorSprite)
-                            {
-                                index = i;
-                                tileToRemove = tile;
-                                break;
-                            }
-                        }
-
-                        if (index >= 0)
-                        {
-                            tilesProperty.DeleteArrayElementAtIndex(index);
-
-                            AssetDatabase.RemoveObjectFromAsset(tileToRemove);
-
-                            serializedDecorator.ApplyModifiedPropertiesWithoutUndo();
-
-                            EditorUtility.SetDirty(decorator);
-                            AssetDatabase.SaveAssetIfDirty(decorator);
-                        }
-                    }
-                }
-            });
-
-            m_tileOutline.Add(m_tilePainting);
-
-            m_connectionPainting = new VisualElement();
-            m_connectionPainting.style.position = Position.Absolute;
-            m_connectionPainting.style.width    = Length.Percent(100.0f);
-            m_connectionPainting.style.height   = Length.Percent(100.0f);
-
-            m_ruleDisplay = new RuleDisplay(m_ruleProperty, m_tileProperty, m_paintControl);
-            m_ruleDisplay.style.flexGrow = 1.0f;
-            m_ruleDisplay.lockIconTexture = m_lockIconTexture;
-            m_connectionPainting.Add(m_ruleDisplay);
-
-            m_tileOutline.Add(m_connectionPainting);
-
-            m_weightPainting = new VisualElement();
-            
-            m_weightPainting.style.position          = Position.Absolute;
-            m_weightPainting.style.width             = Length.Percent(100.0f);
-            m_weightPainting.style.height            = Length.Percent(100.0f);
-            m_weightPainting.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_weightPainting.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_weightPainting.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_weightPainting.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            m_weightPainting.RegisterCallback<MouseEnterEvent>(e =>
-            {
-                m_weightPainting.style.borderBottomWidth = 2.0f;
-                m_weightPainting.style.borderTopWidth    = 2.0f;
-                m_weightPainting.style.borderLeftWidth   = 2.0f;
-                m_weightPainting.style.borderRightWidth  = 2.0f;
-
-                if (m_paintControl != null && m_paintControl.painting)
-                {
-                    m_weightProperty.floatValue = m_paintControl.weight;
-                    m_weightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                }
-            });
-            m_weightPainting.RegisterCallback<MouseLeaveEvent>(e =>
-            {
-                m_weightPainting.style.borderBottomWidth = 0.0f;
-                m_weightPainting.style.borderTopWidth    = 0.0f;
-                m_weightPainting.style.borderLeftWidth   = 0.0f;
-                m_weightPainting.style.borderRightWidth  = 0.0f;
-            });
-            m_weightPainting.RegisterCallback<ClickEvent>(e =>
-            {
-                if (m_paintControl != null)
-                {
-                    m_weightProperty.floatValue = m_paintControl.weight;
-                    m_weightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                }
-            });
-
-            m_weightDisplay = new Label();
-            m_weightDisplay.style.flexGrow                = 1.0f;
-            m_weightDisplay.style.unityTextAlign          = TextAnchor.MiddleCenter;
-            m_weightDisplay.style.color                   = new Color(0.77f, 0.77f, 0.77f);
-            m_weightDisplay.style.fontSize                = initialScale * 12.0f;
-            m_weightDisplay.style.unityFontStyleAndWeight = FontStyle.Bold;
-            m_weightDisplay.style.unityTextOutlineColor   = new Color(0.2f, 0.2f, 0.2f);
-            m_weightDisplay.style.unityTextOutlineWidth   = 1.0f;
-
-            m_weightPainting.Add(m_weightDisplay);
-
-            m_tileOutline.Add(m_weightPainting);
-
-            textureDisplay.onScale += (scale) =>
-            {
-                style.top    = scale * 32.0f / ppu * (m_texture.height - spriteRect.height - spriteRect.y);
-                style.left   = scale * 32.0f / ppu * spriteRect.x;
-                style.width  = scale * 32.0f / ppu * spriteRect.width;
-                style.height = scale * 32.0f / ppu * spriteRect.height;
-
-                m_tileOutline.style.top    = scale * 32.0f / ppu * (spriteRect.height - pivot.y - 0.5f * ppu);
-                m_tileOutline.style.left   = scale * 32.0f / ppu * (pivot.x - 0.5f * ppu);
-                m_tileOutline.style.width  = scale * 32.0f / ppu * ppu;
-                m_tileOutline.style.height = scale * 32.0f / ppu * ppu;
-
-                m_weightDisplay.style.fontSize = scale * 12.0f;
-            };
-
-            UpdateFields();
-        }
-
-        private static string WeightToString(float weight)
-        {
-            return weight.ToString("0.##");
-        }
-    }
-
-    internal class RuleDisplay : VisualElement
-    {
-        private PaintControl m_paintControl;
-
-        private SerializedProperty m_ruleProperty;
-        private SerializedProperty m_tileProperty;
-
-        private SerializedProperty m_topLeftProperty;
-        private SerializedProperty m_topProperty;
-        private SerializedProperty m_topRightProperty;
-        private SerializedProperty m_leftProperty;
-        private SerializedProperty m_rightProperty;
-        private SerializedProperty m_bottomLeftProperty;
-        private SerializedProperty m_bottomProperty;
-        private SerializedProperty m_bottomRightProperty;
-        private SerializedProperty m_alwaysUsedProperty;
-
-        private VisualElement m_tile;
-        private VisualElement m_lock;
-
-        private VisualElement m_ruleTopLeft;
-        private VisualElement m_ruleTop;
-        private VisualElement m_ruleTopRight;
-        private VisualElement m_ruleLeft;
-        private VisualElement m_ruleRight;
-        private VisualElement m_ruleBottomLeft;
-        private VisualElement m_ruleBottom;
-        private VisualElement m_ruleBottomRight;
-
-        private Texture2D m_lockIconTexture;
-
-        public PaintControl paintControl
-        {
-            get => m_paintControl;
-            set => m_paintControl = value;
-        }
-
-        public Texture2D lockIconTexture
-        {
-            get => m_lockIconTexture;
-            set
-            {
-                m_lockIconTexture = value;
-                m_lock.style.backgroundImage = m_lockIconTexture;
-            }
-        }
-
-        public void UpdateFields()
-        {
-            UnityEngine.Object currentTile = m_tileProperty.objectReferenceValue;
-
-            Color tileColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (currentTile != null)
-            {
-                tileColor = new SerializedObject(currentTile).FindProperty("m_color").colorValue;
-                tileColor.a = 0.5f;
-            }
-
-            m_tile.style.backgroundColor = tileColor;
-
-            m_lock.style.backgroundImage = m_lockIconTexture;
-            m_lock.style.unityBackgroundImageTintColor = new Color(
-                tileColor.r < 0.5f ? 1.0f : 0.0f,
-                tileColor.g < 0.5f ? 1.0f : 0.0f,
-                tileColor.b < 0.5f ? 1.0f : 0.0f, 
-                m_alwaysUsedProperty.boolValue ? 0.6f : 0.0f
-            );
-
-            m_lock.tooltip = m_alwaysUsedProperty.boolValue
-                ? "This sprite will always be added to the sprite pool, even if there's a more specific rule."
-                : "This sprite might not be used if there's a more specific rule.";
-
-            Color ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_topLeftProperty.objectReferenceValue is ITileFilter || m_topLeftProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_topLeftProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleTopLeft.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_topProperty.objectReferenceValue is ITileFilter || m_topProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_topProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleTop.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_topRightProperty.objectReferenceValue is ITileFilter || m_topRightProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_topRightProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleTopRight.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_leftProperty.objectReferenceValue is ITileFilter || m_leftProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_leftProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleLeft.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_rightProperty.objectReferenceValue is ITileFilter || m_rightProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_rightProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleRight.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_bottomLeftProperty.objectReferenceValue is ITileFilter || m_bottomLeftProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_bottomLeftProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleBottomLeft.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_bottomProperty.objectReferenceValue is ITileFilter || m_bottomProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_bottomProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleBottom.style.backgroundColor = ruleFilterColor;
-
-            ruleFilterColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            if (m_bottomRightProperty.objectReferenceValue is ITileFilter || m_bottomRightProperty.objectReferenceValue is ITileIdentifier)
-            {
-                ruleFilterColor = new SerializedObject(m_bottomRightProperty.objectReferenceValue).FindProperty("m_color").colorValue;
-                ruleFilterColor.a = 0.5f;
-            }
-            m_ruleBottomRight.style.backgroundColor = ruleFilterColor;
-        }
-
-        public RuleDisplay(SerializedProperty ruleProperty, SerializedProperty tileProperty, PaintControl paintControl)
-        {
-            m_paintControl = paintControl;
-
-            m_ruleProperty = ruleProperty;
-            m_tileProperty = tileProperty;
-
-            m_topLeftProperty     = m_ruleProperty.FindPropertyRelative("m_topLeft");
-            m_topProperty         = m_ruleProperty.FindPropertyRelative("m_top");
-            m_topRightProperty    = m_ruleProperty.FindPropertyRelative("m_topRight");
-            m_leftProperty        = m_ruleProperty.FindPropertyRelative("m_left");
-            m_rightProperty       = m_ruleProperty.FindPropertyRelative("m_right");
-            m_bottomLeftProperty  = m_ruleProperty.FindPropertyRelative("m_bottomLeft");
-            m_bottomProperty      = m_ruleProperty.FindPropertyRelative("m_bottom");
-            m_bottomRightProperty = m_ruleProperty.FindPropertyRelative("m_bottomRight");
-            m_alwaysUsedProperty  = m_ruleProperty.FindPropertyRelative("m_alwaysUsed");
-
-            m_tile = new VisualElement();
-            m_tile.style.position        = Position.Absolute;
-            m_tile.style.left            = Length.Percent(25.0f);
-            m_tile.style.top             = Length.Percent(25.0f);
-            m_tile.style.width           = Length.Percent(50.0f);
-            m_tile.style.height          = Length.Percent(50.0f);
-            
-            Add(m_tile);
-
-            m_lock = new VisualElement();
-
-            m_lock.style.position = Position.Absolute;
-            m_lock.style.bottom   = 0.0f;
-            m_lock.style.right    = 0.0f;
-            m_lock.style.width    = Length.Percent(35.0f);
-            m_lock.style.height   = Length.Percent(35.0f);
-
-            m_lock.style.borderBottomWidth = 1.0f;
-            m_lock.style.borderTopWidth    = 1.0f;
-            m_lock.style.borderLeftWidth   = 1.0f;
-            m_lock.style.borderRightWidth  = 1.0f;
-
-            m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-
-            m_lock.RegisterCallback<MouseEnterEvent>(e =>
-            {
-                m_lock.style.borderBottomWidth = 2.0f;
-                m_lock.style.borderTopWidth    = 2.0f;
-                m_lock.style.borderLeftWidth   = 2.0f;
-                m_lock.style.borderRightWidth  = 2.0f;
-
-                m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-            });
-            m_lock.RegisterCallback<MouseLeaveEvent>(e =>
-            {
-                m_lock.style.borderBottomWidth = 1.0f;
-                m_lock.style.borderTopWidth    = 1.0f;
-                m_lock.style.borderLeftWidth   = 1.0f;
-                m_lock.style.borderRightWidth  = 1.0f;
-
-                m_lock.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                m_lock.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                m_lock.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                m_lock.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            });
-            m_lock.RegisterCallback<MouseDownEvent>(e =>
-            {
-                if (e.button == 0)
-                {
-                    m_alwaysUsedProperty.boolValue = !m_alwaysUsedProperty.boolValue;
-                    m_alwaysUsedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                }
-            });
-
-            m_tile.Add(m_lock);
-
-            m_ruleTopLeft = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topLeftProperty.objectReferenceValue = filter;
-                        m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_topLeftProperty.objectReferenceValue = null;
-                    m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topLeftProperty.objectReferenceValue = filter;
-                        m_topLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleTopLeft.style.top    = Length.Percent(0.0f);
-            m_ruleTopLeft.style.left   = Length.Percent(0.0f);
-            m_ruleTopLeft.style.width  = Length.Percent(25.0f);
-            m_ruleTopLeft.style.height = Length.Percent(25.0f);
-            Add(m_ruleTopLeft);
-
-            m_ruleTop = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topProperty.objectReferenceValue = filter;
-                        m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_topProperty.objectReferenceValue = null;
-                    m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topProperty.objectReferenceValue = filter;
-                        m_topProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleTop.style.top    = Length.Percent(0.0f);
-            m_ruleTop.style.left   = Length.Percent(25.0f);
-            m_ruleTop.style.width  = Length.Percent(50.0f);
-            m_ruleTop.style.height = Length.Percent(25.0f);
-            Add(m_ruleTop);
-
-            m_ruleTopRight = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topRightProperty.objectReferenceValue = filter;
-                        m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_topRightProperty.objectReferenceValue = null;
-                    m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_topRightProperty.objectReferenceValue = filter;
-                        m_topRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleTopRight.style.top    = Length.Percent(0.0f);
-            m_ruleTopRight.style.left   = Length.Percent(75.0f);
-            m_ruleTopRight.style.width  = Length.Percent(25.0f);
-            m_ruleTopRight.style.height = Length.Percent(25.0f);
-            Add(m_ruleTopRight);
-
-            m_ruleLeft = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_leftProperty.objectReferenceValue = filter;
-                        m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_leftProperty.objectReferenceValue = null;
-                    m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_leftProperty.objectReferenceValue = filter;
-                        m_leftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleLeft.style.top    = Length.Percent(25.0f);
-            m_ruleLeft.style.left   = Length.Percent(0.0f);
-            m_ruleLeft.style.width  = Length.Percent(25.0f);
-            m_ruleLeft.style.height = Length.Percent(50.0f);
-            Add(m_ruleLeft);
-
-            m_ruleRight = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_rightProperty.objectReferenceValue = filter;
-                        m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_rightProperty.objectReferenceValue = null;
-                    m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_rightProperty.objectReferenceValue = filter;
-                        m_rightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleRight.style.top    = Length.Percent(25.0f);
-            m_ruleRight.style.left   = Length.Percent(75.0f);
-            m_ruleRight.style.width  = Length.Percent(25.0f);
-            m_ruleRight.style.height = Length.Percent(50.0f);
-            Add(m_ruleRight);
-
-            m_ruleBottomLeft = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomLeftProperty.objectReferenceValue = filter;
-                        m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_bottomLeftProperty.objectReferenceValue = null;
-                    m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomLeftProperty.objectReferenceValue = filter;
-                        m_bottomLeftProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleBottomLeft.style.top    = Length.Percent(75.0f);
-            m_ruleBottomLeft.style.left   = Length.Percent(0.0f);
-            m_ruleBottomLeft.style.width  = Length.Percent(25.0f);
-            m_ruleBottomLeft.style.height = Length.Percent(25.0f);
-            Add(m_ruleBottomLeft);
-
-            m_ruleBottom = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomProperty.objectReferenceValue = filter;
-                        m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_bottomProperty.objectReferenceValue = null;
-                    m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomProperty.objectReferenceValue = filter;
-                        m_bottomProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleBottom.style.top    = Length.Percent(75.0f);
-            m_ruleBottom.style.left   = Length.Percent(25.0f);
-            m_ruleBottom.style.width  = Length.Percent(50.0f);
-            m_ruleBottom.style.height = Length.Percent(25.0f);
-            Add(m_ruleBottom);
-
-            m_ruleBottomRight = CreatePaintable(
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomRightProperty.objectReferenceValue = filter;
-                        m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                },
-                () =>
-                {
-                    m_bottomRightProperty.objectReferenceValue = null;
-                    m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    UpdateFields();
-                },
-                () =>
-                {
-                    if (m_paintControl != null && m_paintControl.painting && m_paintControl.paintingFilter != null && m_paintControl.paintingFilter is UnityEngine.Object filter)
-                    {
-                        m_bottomRightProperty.objectReferenceValue = filter;
-                        m_bottomRightProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                        UpdateFields();
-                    }
-                }
-            );
-            m_ruleBottomRight.style.top    = Length.Percent(75.0f);
-            m_ruleBottomRight.style.left   = Length.Percent(75.0f);
-            m_ruleBottomRight.style.width  = Length.Percent(25.0f);
-            m_ruleBottomRight.style.height = Length.Percent(25.0f);
-            Add(m_ruleBottomRight);
-
-            UpdateFields();
-        }
-
-        private static VisualElement CreatePaintable(Action onPaint, Action onReset, Action onHover)
-        {
-            VisualElement element = new VisualElement();
-
-            element.style.position = Position.Absolute;
-
-            element.style.borderBottomWidth = 1.0f;
-            element.style.borderTopWidth    = 1.0f;
-            element.style.borderLeftWidth   = 1.0f;
-            element.style.borderRightWidth  = 1.0f;
-
-            element.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            element.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            element.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            element.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-
-            element.RegisterCallback<MouseEnterEvent>(e =>
-            {
-                element.style.borderBottomWidth = 2.0f;
-                element.style.borderTopWidth    = 2.0f;
-                element.style.borderLeftWidth   = 2.0f;
-                element.style.borderRightWidth  = 2.0f;
-
-                element.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                element.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                element.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-                element.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 1.0f);
-
-                onHover?.Invoke();
-            });
-            element.RegisterCallback<MouseLeaveEvent>(e =>
-            {
-                element.style.borderBottomWidth = 1.0f;
-                element.style.borderTopWidth    = 1.0f;
-                element.style.borderLeftWidth   = 1.0f;
-                element.style.borderRightWidth  = 1.0f;
-
-                element.style.borderBottomColor = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                element.style.borderTopColor    = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                element.style.borderLeftColor   = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-                element.style.borderRightColor  = new Color(0.0f, 1.0f, 1.0f, 0.2f);
-            });
-            element.RegisterCallback<MouseDownEvent>(e =>
-            {
-                if (e.button == 0 && !e.shiftKey)
-                {
-                    onPaint?.Invoke();
-                }
-                else if (e.button == 0 && e.shiftKey)
-                {
-                    onReset?.Invoke();
-                }
-            });
-
-            return element;
-        }
-    }
-
-    internal class PaintControl : VisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<PaintControl> { }
-
-        private EnumField m_brushTypeField;
-        public event Action<BrushType> onBrushTypeChanged;
-
-        private VisualElement m_tilePaintingConfig;
-        private Label m_currentTile;
-
-        private ITileIdentifier m_paintingTile;
-
-        public ITileIdentifier paintingTile => m_paintingTile;
-
-        private VisualElement m_connectionPaintingConfig;
-        private Label m_currentFilter;
-
-        private ITileFilter m_paintingFilter;
-
-        public ITileFilter paintingFilter => m_paintingFilter;
-
-        private VisualElement m_weightPaintingConfig;
-        private FloatField m_weight;
-
-        private bool m_painting;
-
-        public bool painting
-        {
-            get => m_painting;
-            set => m_painting = value;
-        }
-
-        public float weight => m_weight.value;
-
-        public BrushType brushType
-        {
-            get => (BrushType)m_brushTypeField.value;
-            set => m_brushTypeField.value = value;
-        }
-
-        public void SelectTile(ITileIdentifier tile)
-        {
-            m_paintingTile = tile;
-            m_currentTile.text = tile == null ? "" : tile is UnityEngine.Object obj ? obj.name : tile.ToString();
-
-            Color color = Color.white;
-            if (tile != null && tile is UnityEngine.Object unityObject)
-            {
-                color = new SerializedObject(unityObject).FindProperty("m_color").colorValue;
-                color.a = 1.0f;
-            }
-            m_currentTile.style.color = color;
-        }
-
-        public void SelectFilter(ITileFilter filter)
-        {
-            m_paintingFilter = filter;
-            m_currentFilter.text = filter == null ? "" : filter is UnityEngine.Object obj ? obj.name : filter.ToString();
-
-            Color color = Color.white;
-            if (filter != null && filter is UnityEngine.Object unityObject)
-            {
-                color = new SerializedObject(unityObject).FindProperty("m_color")?.colorValue ?? Color.white;
-                color.a = 1.0f;
-            }
-            m_currentFilter.style.color = color;
-        }
-
-        public void Rebuild()
-        {
-            BrushType currentBrushType = m_brushTypeField == null ? BrushType.Tile : (BrushType)m_brushTypeField.value;
-
-            Clear();
-
-            m_brushTypeField = new EnumField("Brush type", currentBrushType);
-            m_brushTypeField.RegisterValueChangedCallback(e =>
-            {
-                m_tilePaintingConfig.style.display       = (BrushType)m_brushTypeField.value == BrushType.Tile ? DisplayStyle.Flex : DisplayStyle.None;
-                m_connectionPaintingConfig.style.display = (BrushType)m_brushTypeField.value == BrushType.Connection ? DisplayStyle.Flex : DisplayStyle.None;
-                m_weightPaintingConfig.style.display     = (BrushType)m_brushTypeField.value == BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
-
-                onBrushTypeChanged?.Invoke((BrushType)e.newValue);
-            });
-            Add(m_brushTypeField);
-
-            m_tilePaintingConfig = new VisualElement();
-            Add(m_tilePaintingConfig);
-
-            m_connectionPaintingConfig = new VisualElement();
-            Add(m_connectionPaintingConfig);
-
-            m_weightPaintingConfig = new VisualElement();
-            Add(m_weightPaintingConfig);
-
-            m_tilePaintingConfig.style.display       = (BrushType)m_brushTypeField.value == BrushType.Tile ? DisplayStyle.Flex : DisplayStyle.None;
-            m_connectionPaintingConfig.style.display = (BrushType)m_brushTypeField.value == BrushType.Connection ? DisplayStyle.Flex : DisplayStyle.None;
-            m_weightPaintingConfig.style.display     = (BrushType)m_brushTypeField.value == BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
-
-            m_currentTile = new Label();
-            m_currentTile.style.marginLeft = 4.0f;
-            m_currentTile.style.marginTop  = 4.0f;
-            m_currentTile.style.unityFontStyleAndWeight = FontStyle.Bold;
-            m_tilePaintingConfig.Add(m_currentTile);
-
-            m_currentFilter = new Label();
-            m_currentFilter.style.marginLeft = 4.0f;
-            m_currentFilter.style.marginTop  = 4.0f;
-            m_currentFilter.style.unityFontStyleAndWeight = FontStyle.Bold;
-            m_connectionPaintingConfig.Add(m_currentFilter);
-
-            m_weight = new FloatField("Weight");
-            m_weight.value = EditorPrefs.GetFloat("Zlitz.Extra2D.BetterTile.paintControlWeight", 1.0f);
-            m_weight.RegisterValueChangedCallback(e =>
-            {
-                float value = Mathf.Max(0.0f, e.newValue);
-                m_weight.SetValueWithoutNotify(value);
-                EditorPrefs.SetFloat("Zlitz.Extra2D.BetterTile.paintControlWeight", value);
-            });
-            m_weightPaintingConfig.Add(m_weight);
-        }
-
-        public PaintControl()
-        {
-            AddToClassList("dark-gray");
-            Rebuild();
-        }
-
-        public enum BrushType
-        {
-            Tile,
-            Connection,
+            Rule,
             Weight
         }
+
+        internal class PaintContext
+        {
+            public event Action<Brush> onBrushChanged;
+
+            public event Action<Brush, bool> onPaintStarted;
+
+            public event Action<SerializedTile>          onTileColorChanged;
+            public event Action<SerializedCategory>      onCategoryColorChanged;
+            public event Action<SerializedSpecialFilter> onFilterColorChanged;
+
+            private SerializedTileSet m_serializedTileSet;
+
+            private Brush m_currentBrush;
+
+            private bool m_active;
+            private bool m_inverted;
+
+            private TileFilterBrush m_tileFilterBrush;
+            private WeightBrush     m_weightBrush;
+
+            public Brush currentBrush => m_currentBrush;
+
+            public bool active
+            {
+                get => m_active;
+                set
+                {
+                    if (!m_active && value)
+                    {
+                        onPaintStarted?.Invoke(m_currentBrush, m_inverted);
+                    }
+                    m_active = value;
+                }
+            }
+
+            public bool inverted
+            {
+                get => m_inverted;
+                set => m_inverted = value;
+            }
+
+            public void UpdateBrush(BrushInfo brushInfo)
+            {
+                if (brushInfo.brushType == BrushType.Rule)
+                {
+                    switch (brushInfo.filterType)
+                    {
+                        case TileFilterType.Tile:
+                            {
+                                m_tileFilterBrush.SetTile(brushInfo.tile);
+                                break;
+                            }
+                        case TileFilterType.TileCategory:
+                            {
+                                m_tileFilterBrush.SetCategory(brushInfo.category);
+                                break;
+                            }
+                        default:
+                            {
+                                m_tileFilterBrush.SetSpecialFilter(brushInfo.filterType);
+                                break;
+                            }
+                    }
+
+                    m_currentBrush = m_tileFilterBrush;
+                    onBrushChanged?.Invoke(m_currentBrush);
+
+                    return;
+                }
+                if (brushInfo.brushType == BrushType.Weight)
+                {
+                    m_weightBrush.SetWeight(brushInfo.weight);
+
+                    m_currentBrush = m_weightBrush;
+                    onBrushChanged?.Invoke(m_currentBrush);
+
+                    return;
+                }
+            }
+
+            public void OnTileInfoChanged(SerializedTile serializedTile, Action onChanged)
+            {
+                if (m_currentBrush is TileFilterBrush tileFilterBrush && tileFilterBrush.filterType == TileFilterType.Tile && tileFilterBrush.tile == serializedTile.tile)
+                {
+                    onChanged?.Invoke();
+                }
+            }
+
+            public void OnCategoryInfoChanged(SerializedCategory serializedCategory, Action onChanged)
+            {
+                if (m_currentBrush is TileFilterBrush tileFilterBrush && tileFilterBrush.filterType == TileFilterType.TileCategory && tileFilterBrush.category == serializedCategory.category)
+                {
+                    onChanged?.Invoke();
+                }
+            }
+
+            public void OnFilterInfoChanged(SerializedSpecialFilter serializedSpecialFilter, Action onChanged)
+            {
+                if (m_currentBrush is TileFilterBrush tileFilterBrush && tileFilterBrush.filterType == serializedSpecialFilter.filterType)
+                {
+                    onChanged?.Invoke();
+                }
+            }
+
+            public void ClearBrushEvent()
+            {
+                onBrushChanged = null;
+            }
+
+            public SerializedTile GetSerializedTile(Tile tile)
+            {
+                return m_serializedTileSet.tiles.FirstOrDefault(t => t.tile == tile);
+            }
+
+            public SerializedCategory GetSerializedCategory(TileCategory category)
+            {
+                return m_serializedTileSet.categories.FirstOrDefault(c => c.category == category);
+            }
+
+            public SerializedSpecialFilter GetSerializedSpecialFilter(TileFilterType filterType)
+            {
+                return m_serializedTileSet.specialFilters.FirstOrDefault(f => f.filterType == filterType);
+            }
+
+            public PaintContext(TileSetEditorWindow tileSetEditor)
+            {
+                tileSetEditor.m_onTileColorChanged     += (t) => onTileColorChanged?.Invoke(t);
+                tileSetEditor.m_onCategoryColorChanged += (c) => onCategoryColorChanged?.Invoke(c);
+                tileSetEditor.m_onFilterColorChanged   += (f) => onFilterColorChanged?.Invoke(f);
+
+                m_serializedTileSet = tileSetEditor.m_serializedTileSet;
+
+                m_tileFilterBrush = new TileFilterBrush();
+                m_tileFilterBrush.SetSpecialFilter(TileFilterType.Any);
+
+                m_weightBrush = new WeightBrush();
+
+                m_currentBrush = m_tileFilterBrush;
+            }
+        }
+
+        internal abstract class Brush
+        {
+
+        }
+
+        internal class TileFilterBrush : Brush
+        {
+            public TileFilterType filterType { get; private set; }
+
+            public Tile tile { get; private set; }
+
+            public TileCategory category { get; private set; }
+
+            public bool SetTile(Tile tile)
+            {
+                if (tile == null)
+                {
+                    return SetSpecialFilter(TileFilterType.Any);
+                }
+
+                if (filterType != TileFilterType.Tile || this.tile != tile)
+                {
+                    filterType = TileFilterType.Tile;
+                    this.tile = tile;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool SetCategory(TileCategory category)
+            {
+                if (category == null)
+                {
+                    return SetSpecialFilter(TileFilterType.Any);
+                }
+
+                if (filterType != TileFilterType.TileCategory || this.category != category)
+                {
+                    filterType = TileFilterType.TileCategory;
+                    this.category = category;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool SetSpecialFilter(TileFilterType filterType)
+            {
+                if (this.filterType != filterType)
+                {
+                    this.filterType = filterType;
+                    tile = null;
+                    category = null;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        internal class WeightBrush : Brush
+        {
+            public float weight { get; private set; }
+
+            public bool SetWeight(float weight)
+            {
+                if (this.weight != weight)
+                {
+                    this.weight = weight;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        #endregion
     }
 }

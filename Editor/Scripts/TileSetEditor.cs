@@ -1,43 +1,29 @@
 using UnityEditor;
-using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Zlitz.Extra2D.BetterTile
 {
-    [CustomEditor(typeof(TileSet))]
+    //[CustomEditor(typeof(TileSet))]
     public class TileSetEditor : Editor
     {
-        private static readonly GUIContent s_editButtonLabel = new GUIContent("Edit Tile Set");
-
-        private TileSet m_tileSet;
-
-        private SerializedProperty m_texturesProperty;
-        private SerializedProperty m_categoriesProperty;
-        private SerializedProperty m_tilesProperty;
-
-        private void OnEnable()
+        public override VisualElement CreateInspectorGUI()
         {
-            m_tileSet = serializedObject.targetObject as TileSet;
+            VisualElement root = new VisualElement();
 
-            m_texturesProperty      = serializedObject.FindProperty("m_textures");
-            m_categoriesProperty    = serializedObject.FindProperty("m_categories");
-            m_tilesProperty         = serializedObject.FindProperty("m_tiles");
-        }
+            SerializedProperty tilesProperty = serializedObject.FindProperty("m_tiles");
+            PropertyField tilesField = new PropertyField(tilesProperty);
+            tilesField.SetEnabled(false);
+            root.Add(tilesField);
 
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            using (new EditorGUI.DisabledScope(true))
+            Button openEditorButton = new Button(() =>
             {
-                EditorGUILayout.PropertyField(m_texturesProperty);
-                EditorGUILayout.PropertyField(m_categoriesProperty);
-                EditorGUILayout.PropertyField(m_tilesProperty);
-            }
+                TileSetEditorWindow.Open(target as TileSet);
+            });
+            openEditorButton.text = "Open Editor";
+            root.Add(openEditorButton);
 
-            if (GUILayout.Button(s_editButtonLabel))
-            {
-                TileSetEditorWindow.Open(m_tileSet);
-            }
+            return root;
         }
     }
 }

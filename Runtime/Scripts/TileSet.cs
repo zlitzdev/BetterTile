@@ -5,244 +5,436 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Zlitz.Extra2D.BetterTile
 {
-    [CreateAssetMenu(menuName = "Zlitz/Extra2D/Better Tile/Tile Set", fileName = "Tile Set")]
+    [CreateAssetMenu(menuName = "Zlitz/Extra 2D/Better Tile/Tile Set")]
     public sealed class TileSet : ScriptableObject
     {
-        #region Editor-only properties
+        [SerializeField]
+        private string m_id;
+
+        public string id => m_id;
+
         #if UNITY_EDITOR
 
         [SerializeField]
-        private Texture2D[] m_textures;
+        private string m_newBuildId;
+
+        [SerializeField]
+        private string m_oldBuildId;
 
         #endif
-        #endregion
-
-        [SerializeField]
-        private SpriteEntry[] m_spriteEntries;
-
-        [SerializeField]
-        private TileCategory[] m_categories;
 
         [SerializeField]
         private Tile[] m_tiles;
 
         [SerializeField]
-        private SelfTileFilter m_selfFilter;
+        private TileCategory[] m_categories;
 
         [SerializeField]
-        private TileDecorator m_decorator;
+        private SimpleTile[] m_decorators;
 
-        public IEnumerable<TileCategory> categories => m_categories ?? Enumerable.Empty<TileCategory>();
+        #if UNITY_EDITOR
 
-        public IEnumerable<Tile> tiles => m_tiles ?? Enumerable.Empty<Tile>();
+        [SerializeField]
+        private SpecialTileFilter[] m_specialFilters;
 
-        internal TileDecorator decorator => m_decorator;
-
-        internal IEnumerable<SpriteOutput> MatchRules(Tile sourceTile, Vector3Int position, ITilemap tilemap)
+        [Serializable]
+        private struct SpecialTileFilter
         {
-            List<SpriteOutput> results = new List<SpriteOutput>();
+            [SerializeField]
+            private TileFilterType m_type;
 
-            foreach (SpriteEntry spriteEntry in m_spriteEntries)
+            [SerializeField]
+            private Color m_color;
+        }
+
+        #endif
+
+        [SerializeField]
+        private RuleGroup[] m_ruleGroups;
+
+        [SerializeField]
+        private OverlayGroup[] m_overlayGroups;
+
+        [SerializeField]
+        private TileRule[] m_emptySpriteRules;
+
+        internal IReadOnlyList<OverlayGroup> overlayGroups => m_overlayGroups;
+
+        internal OverlayGroup GetOverlayGroup(string id)
+        {
+            return m_overlayGroups?.FirstOrDefault(o => o.id == id);
+        }
+
+        [Serializable]
+        private struct RuleGroup
+        {
+            [SerializeField]
+            private string m_id;
+
+            #if UNITY_EDITOR
+
+            [SerializeField]
+            private Texture2D m_texture;
+
+            #endif
+
+            [SerializeField]
+            private TileRule[] m_rules;
+
+            public string id => m_id;
+
+            public TileRule[] rules => m_rules;
+        }
+
+        [Serializable]
+        internal class OverlayGroup
+        {
+            [SerializeField]
+            private string m_id;
+
+            #if UNITY_EDITOR
+
+            [SerializeField]
+            private string m_debugName;
+
+            #endif
+
+            [SerializeField]
+            private Overlay[] m_overlayPatterns;
+
+            public string id => m_id;
+
+            public IReadOnlyList<Overlay> overlayPatterns => m_overlayPatterns;
+        }
+
+        [Serializable]
+        internal class Overlay
+        {
+            [SerializeField]
+            private string m_id;
+
+            [SerializeField]
+            private Vector2Int m_size;
+
+            [SerializeField]
+            private Vector2Int m_cellSize;
+
+            [SerializeField]
+            private Vector2Int m_spacing;
+
+            [SerializeField]
+            private float m_density;
+
+            [SerializeField]
+            private OverlayRule[] m_rules;
+
+            [SerializeField]
+            private SimpleTile[] m_overlayTiles;
+
+            public string id => m_id;
+
+            public Vector2Int size => m_size;
+
+            public Vector2Int cellSize => m_cellSize;
+
+            public Vector2Int spacing => m_spacing;
+
+            public float density => m_density;
+
+            public OverlayRule GetRule(Vector2Int offset)
             {
-                if (spriteEntry.tile == null)
-                {
-                    continue;
-                }
-
-                bool isCorrectTileType = false;
-
-                Tile parentTile = sourceTile;
-                while (parentTile != null)
-                {
-                    if (parentTile == spriteEntry.tile)
-                    {
-                        isCorrectTileType = true;
-                        break;
-                    }
-                    parentTile = parentTile.baseTile;
-                }
-
-                if (!isCorrectTileType)
-                {
-                    continue;
-                }
-
-                bool matchedRules = spriteEntry.connectionRule.Check(tilemap, position, sourceTile); ;
-                if (!matchedRules)
-                {
-                    continue;
-                }
-
-                results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
+                int index = offset.y * m_size.x + offset.x;
+                return m_rules[index];
             }
 
-            for (int i = results.Count - 1; i >= 0; i--)
+            public void Initialize()
             {
-                SpriteOutput currentOutput = results[i];
-
-                bool shouldRemove = false;
-
-                for (int j = 0; j < results.Count; j++)
+                for (int i = 0; i < m_rules.Length; i++)
                 {
-                    if (j == i || !results[j].connectionRule.IsSame(currentOutput.connectionRule))
+                    OverlayRule rule = m_rules[i];
+                    TileOutput output = rule.output;
+
+                    output.assignedTile = m_overlayTiles[i];
+
+                    rule.output = output;
+                    m_rules[i] = rule;
+                }
+            }
+        }
+
+        [Serializable]
+        internal struct OverlayRule
+        {
+            [SerializeField]
+            private TileOutput m_output;
+
+            [SerializeField]
+            private TileFilter m_c;
+
+            [SerializeField]
+            private TileFilter m_nx;
+
+            [SerializeField]
+            private TileFilter m_px;
+
+            [SerializeField]
+            private TileFilter m_ny;
+
+            [SerializeField]
+            private TileFilter m_py;
+
+            [SerializeField]
+            private TileFilter m_nxny;
+
+            [SerializeField]
+            private TileFilter m_pxny;
+
+            [SerializeField]
+            private TileFilter m_nxpy;
+
+            [SerializeField]
+            private TileFilter m_pxpy;
+
+            public TileOutput output
+            {
+                get => m_output;
+                set => m_output = value;
+            }
+
+            public bool Match(Tilemap tilemap, Vector3Int position)
+            {
+                TileBase    center  = tilemap.GetTile(position);
+                TileContext context = new TileContext(tilemap, position);
+
+                return
+                    m_c.MatchTile(center) &&
+                    m_nx.MatchTile(context.nx) &&
+                    m_px.MatchTile(context.px) &&
+                    m_ny.MatchTile(context.ny) &&
+                    m_py.MatchTile(context.py) &&
+                    m_nxny.MatchTile(context.nxny) &&
+                    m_pxny.MatchTile(context.pxny) &&
+                    m_nxpy.MatchTile(context.nxpy) &&
+                    m_pxpy.MatchTile(context.pxpy);
+            }
+        }
+
+        #region Rule Sets
+
+        internal static HashSet<TileSet> initializedTileSets = new HashSet<TileSet>();
+
+        private readonly Dictionary<Tile, RuleSet> m_tileRuleSets = new Dictionary<Tile, RuleSet>();
+
+        private readonly RuleSet m_decoratorRuleSet = new RuleSet();
+
+        internal void ResetRuleSets()
+        {
+            m_tileRuleSets.Clear();
+            m_decoratorRuleSet.Clear();
+
+            initializedTileSets.Remove(this);
+        }
+
+        internal RuleSet GetTileRuleSet(Tile tile)
+        {
+            Initialize();
+            return m_tileRuleSets[tile];
+        }
+
+        internal RuleSet GetDecoratorRuleSet()
+        {
+            Initialize();
+            return m_decoratorRuleSet;
+        }
+
+        internal void Initialize()
+        {
+            #if UNITY_EDITOR
+
+            if (m_newBuildId != m_oldBuildId)
+            {
+                m_oldBuildId = m_newBuildId;
+                initializedTileSets.Remove(this);
+            }
+
+            #endif
+
+            if (!initializedTileSets.Add(this))
+            {
+                return;
+            }
+
+            m_tileRuleSets.Clear();
+            m_decoratorRuleSet.Clear();
+
+            if (m_tiles != null)
+            {
+                foreach (Tile tile in m_tiles)
+                {
+                    RuleSet ruleSet = new RuleSet();
+                    m_tileRuleSets.Add(tile, ruleSet);
+                }
+            }
+
+            if (m_emptySpriteRules != null)
+            {
+                int index = 0;
+                foreach (TileRule rule in m_emptySpriteRules)
+                {
+                    if (rule.identity.IsTile(out Tile tile))
+                    {
+                        m_tileRuleSets[tile].Insert(rule, assignedTile: tile);
+                    }
+                    else if (rule.identity.IsDecorator())
+                    {
+                        SimpleTile decorator = GetDecorator($"empty.{index}", rule.output.sprite);
+                        m_decoratorRuleSet.Insert(rule, assignedTile: decorator);
+                    }
+                    index++;
+                }
+            }
+
+            if (m_ruleGroups != null)
+            {
+                foreach (RuleGroup ruleGroup in m_ruleGroups)
+                {
+                    if (ruleGroup.rules == null)
                     {
                         continue;
                     }
 
-                    if (results[j].ruleProvider.IsDescendantOf(currentOutput.ruleProvider))
+                    string id = ruleGroup.id;
+                    foreach (TileRule rule in ruleGroup.rules)
                     {
-                        bool isOverwritten = true;
-
-                        Tile parentTile = results[j].ruleProvider;
-                        while (parentTile != null)
+                        if (rule.identity.IsTile(out Tile tile))
                         {
-                            if (parentTile == currentOutput.ruleProvider)
-                            {
-                                isOverwritten = false;
-                                break;
-                            }
-
-                            if (parentTile.overwriteRules)
-                            {
-                                break;
-                            }
-                            parentTile = parentTile.baseTile;
+                            m_tileRuleSets[tile].Insert(rule);
                         }
-
-                        if (isOverwritten)
+                        else if (rule.identity.IsDecorator())
                         {
-                            shouldRemove = true;
-                            break;
+                            SimpleTile decorator = GetDecorator(id, rule.output.sprite);
+                            m_decoratorRuleSet.Insert(rule, assignedTile: decorator);
                         }
                     }
-                }
-
-                if (!shouldRemove && !currentOutput.connectionRule.alwaysUsed)
-                {
-                    for (int j = 0; j < results.Count; j++)
-                    {
-                        if (j == i || currentOutput.connectionRule.IsSame(results[j].connectionRule))
-                        {
-                            continue;
-                        }
-
-                        if (currentOutput.connectionRule.IsGeneralizedOf(results[j].connectionRule))
-                        {
-                            shouldRemove = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (shouldRemove)
-                {
-                    results.RemoveAt(i);
                 }
             }
 
-            return results;
+            if (m_overlayGroups != null)
+            {
+                foreach (OverlayGroup overlayGroup in m_overlayGroups)
+                {
+                    if (overlayGroup.overlayPatterns == null)
+                    {
+                        continue;
+                    }
+
+                    string id = overlayGroup.id;
+
+                    foreach (Overlay overlayPattern in overlayGroup.overlayPatterns)
+                    {
+                        overlayPattern.Initialize();
+                    }
+                }
+            }
+
+            #if UNITY_EDITOR
+            
+            onTileSetUpdated?.Invoke(this);
+
+            #endif
         }
 
-        internal IEnumerable<SpriteOutput> MatchRulesForDecorator(Vector3Int position, ITilemap tilemap)
+        private SimpleTile GetDecorator(string id, Sprite sprite)
         {
-            List<SpriteOutput> results = new List<SpriteOutput>();
+            return m_decorators.FirstOrDefault(d => d.id == id && d.sprite == sprite);
+        }
 
-            foreach (SpriteEntry spriteEntry in m_spriteEntries)
+        #endregion
+
+        #region Decorators & Overlays
+
+        internal void ResolveDecorator(TilemapDecoratorLayer decoratorLayer, Vector3Int position)
+        {
+            if (decoratorLayer == null)
             {
-                if (spriteEntry.decorator == null)
+                return;
+            }
+
+            decoratorLayer.Resolve(position);
+        }
+
+        internal void ResolveOverlay(TilemapOverlayLayer overlayLayer, Vector3Int position)
+        {
+            if (overlayLayer == null)
+            {
+                return;
+            }
+
+            overlayLayer.Resolve(position, this);
+        }
+
+        #endregion
+
+        #region Events
+
+
+        #if UNITY_EDITOR
+
+        public static event Action<TileSet> onTileSetUpdated;
+
+        #endif
+
+        #endregion
+    }
+
+    internal static class TileSetInitialization
+    {
+        [RuntimeInitializeOnLoadMethod]
+        internal static void ResetTileSets()
+        {
+            TileSet[] tileSets = TileSet.initializedTileSets.ToArray();
+            foreach (TileSet tileSet in tileSets)
+            {
+                tileSet.ResetRuleSets();
+                tileSet.Initialize();
+            }
+        }
+
+        #if UNITY_EDITOR
+        
+        [InitializeOnLoadMethod]
+        internal static void ResetTileSetsEditor()
+        {
+            string[] guids = AssetDatabase.FindAssets($"t:{typeof(TileSet)}");
+            if (guids == null)
+            {
+                return;
+            }
+
+            foreach (string guid in guids)
+            {
+                if (string.IsNullOrEmpty(guid))
                 {
                     continue;
                 }
 
-                bool matchedRules = spriteEntry.connectionRule.Check(tilemap, position, null);
-                if (!matchedRules)
+                TileSet tileSet = AssetDatabase.LoadAssetAtPath<TileSet>(AssetDatabase.GUIDToAssetPath(guid));
+                if (tileSet == null)
                 {
                     continue;
                 }
 
-                results.Add(new SpriteOutput(spriteEntry.tile, spriteEntry.connectionRule, spriteEntry.sprite, spriteEntry.weight));
-            }
-
-            for (int i = results.Count - 1; i >= 0; i--)
-            {
-                SpriteOutput currentOutput = results[i];
-
-                bool shouldRemove = false;
-
-                if (!currentOutput.connectionRule.alwaysUsed)
-                {
-                    for (int j = 0; j < results.Count; j++)
-                    {
-                        if (j == i || currentOutput.connectionRule.IsSame(results[j].connectionRule))
-                        {
-                            continue;
-                        }
-
-                        if (currentOutput.connectionRule.IsGeneralizedOf(results[j].connectionRule))
-                        {
-                            shouldRemove = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (shouldRemove)
-                {
-                    results.RemoveAt(i);
-                }
-            }
-
-
-            return results;
-        }
-
-        [Serializable]
-        private class SpriteEntry
-        {
-            [SerializeField]
-            private Sprite m_sprite;
-
-            [SerializeField]
-            private float m_weight;
-
-            [SerializeField]
-            private UnityEngine.Object m_tile;
-
-            [SerializeField]
-            private ConnectionRule m_rule;
-
-            public Sprite sprite => m_sprite;
-
-            public float weight => m_weight;
-
-            public Tile tile => m_tile as Tile;
-
-            public TileDecorator decorator => m_tile as TileDecorator;
-
-            public ConnectionRule connectionRule => m_rule;
-        }
-
-        internal struct SpriteOutput
-        {
-            public Tile ruleProvider { get; private set; }
-
-            public ConnectionRule connectionRule { get; private set; }
-
-            public float weight { get; private set; }
-
-            public Sprite sprite { get; private set; }
-
-            public SpriteOutput(Tile ruleProvider, ConnectionRule connectionRule, Sprite sprite, float weight)
-            {
-                this.ruleProvider = ruleProvider;
-
-                this.connectionRule = connectionRule;
-
-                this.weight = weight;
-                this.sprite = sprite;
+                tileSet.ResetRuleSets();
+                tileSet.Initialize();
             }
         }
+
+        #endif
     }
 }

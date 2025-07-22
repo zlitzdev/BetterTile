@@ -1,47 +1,33 @@
 using System.Linq;
-using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 namespace Zlitz.Extra2D.BetterTile
 {
-    public sealed class TileCategory : ScriptableObject, ITileFilter
+    public sealed class TileCategory : ScriptableObject
     {
-        #region Editor-only properties
+        [SerializeField]
+        private TileSet m_tileSet;
+
         #if UNITY_EDITOR
 
-        [SerializeField, ColorUsage(showAlpha: false)]
-        private Color m_color = Color.white;
+        [SerializeField]
+        private Color m_color;
 
         #endif
-        #endregion
 
         [SerializeField]
         private Tile[] m_tiles;
 
-        [SerializeField]
-        private bool m_inverted;
-
-        public IEnumerable<Tile> tiles => m_tiles;
-
-        #region ITileFilter
-
-        bool ITileFilter.Match(Tile sourceTile, TileBase tile)
+        public bool Contains(TileBase tile)
         {
-            return m_tiles?.FirstOrDefault(t => t != null && t == tile) != m_inverted;
-        }
-
-        bool ITileFilter.IsGeneralizedOf(ITileFilter other)
-        {
-            return other switch
+            if (tile == null || m_tiles == null || tile is not Tile betterTile)
             {
-                TileCategory category => category != null && category == this,
-                Tile         tile     => tile != null && m_tiles?.FirstOrDefault(t => t != null && t == tile) != m_inverted,
-                _                     => false
-            };
-        }
+                return false;
+            }
 
-        #endregion
+            return m_tiles.Contains(betterTile);
+        }
     }
 }
