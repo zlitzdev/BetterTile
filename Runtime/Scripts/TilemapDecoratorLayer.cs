@@ -114,6 +114,7 @@ namespace Zlitz.Extra2D.BetterTile
             if (m_obj != null)
             {
                 m_obj.hideFlags = HideFlags.HideInHierarchy;
+                m_obj.transform.localPosition = new Vector3(0.0f, 0.0f, -0.0001f);
             }
 
             if (m_renderer != null && m_sourceRenderer != null)
