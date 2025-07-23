@@ -4,7 +4,7 @@ using UnityEditor.UIElements;
 
 namespace Zlitz.Extra2D.BetterTile
 {
-    //[CustomEditor(typeof(TileSet))]
+    [CustomEditor(typeof(TileSet))]
     public class TileSetEditor : Editor
     {
         public override VisualElement CreateInspectorGUI()

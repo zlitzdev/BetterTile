@@ -248,19 +248,36 @@ namespace Zlitz.Extra2D.BetterTile
             foreach (SerializedTileRule serializedRule in m_serializedRuleGroup.rules)
             {
                 Sprite sprite = serializedRule.output.sprite;
-                
+                float ppu = sprite.pixelsPerUnit;
+
                 Vector2 spriteSize = sprite.rect.size;
 
-                Vector2 spriteOffset = sprite.rect.position; 
+                Vector2 spriteOffset = sprite.rect.position;
                 spriteOffset.y = m_serializedRuleGroup.texture.height - spriteSize.y - spriteOffset.y;
+
+                VisualElement wrapper = new VisualElement();
+                wrapper.style.position = Position.Absolute;
+                wrapper.style.left = Length.Percent(spriteOffset.x / m_serializedRuleGroup.texture.width * 100.0f);
+                wrapper.style.top = Length.Percent(spriteOffset.y / m_serializedRuleGroup.texture.height * 100.0f);
+                wrapper.style.width = Length.Percent(spriteSize.x / m_serializedRuleGroup.texture.width * 100.0f);
+                wrapper.style.height = Length.Percent(spriteSize.y / m_serializedRuleGroup.texture.height * 100.0f);
+                wrapper.style.borderBottomColor = UIColors.border;
+                wrapper.style.borderTopColor = UIColors.border;
+                wrapper.style.borderLeftColor = UIColors.border;
+                wrapper.style.borderRightColor = UIColors.border;
+                wrapper.style.borderBottomWidth = 1.0f;
+                wrapper.style.borderTopWidth = 1.0f;
+                wrapper.style.borderLeftWidth = 1.0f;
+                wrapper.style.borderRightWidth = 1.0f;
+                m_rulesContainer.Add(wrapper);
 
                 TileRulePaintable rule = new TileRulePaintable(m_context);
                 rule.style.position = Position.Absolute;
-                rule.style.left   = Length.Percent(spriteOffset.x / m_serializedRuleGroup.texture.width * 100.0f);
-                rule.style.top    = Length.Percent(spriteOffset.y / m_serializedRuleGroup.texture.height * 100.0f);
-                rule.style.width  = Length.Percent(spriteSize.x / m_serializedRuleGroup.texture.width * 100.0f);
-                rule.style.height = Length.Percent(spriteSize.y / m_serializedRuleGroup.texture.height * 100.0f);
-                m_rulesContainer.Add(rule);
+                rule.style.left   = Length.Percent((sprite.pivot.x - 0.5f * ppu) / spriteSize.x * 100.0f);
+                rule.style.bottom = Length.Percent((sprite.pivot.y - 0.5f * ppu) / spriteSize.y * 100.0f);
+                rule.style.width  = Length.Percent(ppu / spriteSize.x * 100.0f);
+                rule.style.height = Length.Percent(ppu / spriteSize.y * 100.0f);
+                wrapper.Add(rule);
 
                 rule.Bind(serializedRule, onChanges);
 
