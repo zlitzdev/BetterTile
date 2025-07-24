@@ -509,4 +509,78 @@ namespace Zlitz.Extra2D.BetterTile
             Add(m_weight);
         }
     }
+
+    internal class AlternatingIndexPaintable : BasePaintable
+    {
+        private SerializedTileRule m_serializedTileRule;
+        private Action m_onChanges;
+
+        private Label m_alternatingIndex;
+
+        protected override void OnPaintingEnabled()
+        {
+            pickingMode = PickingMode.Position;
+            style.display = DisplayStyle.Flex;
+            base.OnPaintingEnabled();
+        }
+
+        protected override void OnPaintingDisabled()
+        {
+            pickingMode = PickingMode.Ignore;
+            style.display = DisplayStyle.None;
+            base.OnPaintingDisabled();
+        }
+
+        protected override bool CheckBrush(TileSetEditorWindow.Brush brush)
+        {
+            if (brush == null || brush is not TileSetEditorWindow.AlternatingIndexBrush alternatingIndexBrush)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        protected override void OnPainted(TileSetEditorWindow.Brush brush, bool inverted)
+        {
+            if (m_serializedTileRule == null || brush is not TileSetEditorWindow.AlternatingIndexBrush alternatingIndexBrush)
+            {
+                return;
+            }
+
+            if (m_serializedTileRule.alternatingIndex != alternatingIndexBrush.alternatingIndex)
+            {
+                m_serializedTileRule.alternatingIndex = alternatingIndexBrush.alternatingIndex;
+                m_onChanges?.Invoke();
+            }
+            m_alternatingIndex.text = m_serializedTileRule.alternatingIndex.ToString();
+        }
+
+        public void Bind(SerializedTileRule serializedTileRule, Action onChanges)
+        {
+            m_serializedTileRule = serializedTileRule;
+            m_onChanges = onChanges;
+
+            m_alternatingIndex.text = m_serializedTileRule.alternatingIndex.ToString();
+        }
+
+        public AlternatingIndexPaintable(TileSetEditorWindow.PaintContext context) :
+            base(context)
+        {
+            pickingMode = PickingMode.Ignore;
+            style.display = DisplayStyle.None;
+
+            m_alternatingIndex = new Label();
+            m_alternatingIndex.style.flexGrow = 1.0f;
+            m_alternatingIndex.style.unityTextAlign = TextAnchor.MiddleCenter;
+            m_alternatingIndex.style.fontSize = 24.0f;
+            m_alternatingIndex.style.unityFontStyleAndWeight = FontStyle.Bold;
+            m_alternatingIndex.style.textShadow = new TextShadow()
+            {
+                offset = new Vector2(2.0f, 2.0f),
+                blurRadius = 2.0f
+            };
+            Add(m_alternatingIndex);
+        }
+    }
 }

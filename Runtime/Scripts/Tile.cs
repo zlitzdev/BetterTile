@@ -30,9 +30,14 @@ namespace Zlitz.Extra2D.BetterTile
 
         protected override TileOutput GetOutput(ITilemap tilemap, Vector3Int position)
         {
-            RuleSet ruleSet = m_tileSet.GetTileRuleSet(this);
-            if (ruleSet != null)
+            RuleSet[] ruleSets = m_tileSet.GetTileRuleSets(this);
+            if (ruleSets != null && ruleSets.Length > 0)
             {
+                int alternatingIndex = position.x + position.y + position.z;
+                alternatingIndex -= Mathf.FloorToInt(alternatingIndex / (float)ruleSets.Length) * ruleSets.Length;
+
+                RuleSet ruleSet = ruleSets[alternatingIndex];
+
                 TileContext context = new TileContext(tilemap, position);
                 if (ruleSet.Sample(context, tilemap.GetRandomValue(position), out TileOutput output))
                 {

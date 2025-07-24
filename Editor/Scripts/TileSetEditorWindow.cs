@@ -721,6 +721,18 @@ namespace Zlitz.Extra2D.BetterTile
                 m_brush.SetWeight(m_paintContext, newValue);
             });
 
+            IntegerField alternatingIndex = new IntegerField();
+            alternatingIndex.value = m_brush.alternatingIndex;
+            alternatingIndex.label = "Alt. Index";
+            alternatingIndex.style.marginTop = 0.0f;
+            alternatingIndex.style.marginBottom = 0.0f;
+            alternatingIndex.style.display = m_brush.brushType == BrushType.AlternatingIndex ? DisplayStyle.Flex : DisplayStyle.None;
+            right.Add(alternatingIndex);
+            alternatingIndex.RegisterValueChangedCallback(e =>
+            {
+                m_brush.SetAlternatingIndex(m_paintContext, e.newValue);
+            });
+
             paintMode.RegisterValueChangedCallback(e =>
             {
                 BrushType newPaintMode = (BrushType)e.newValue;
@@ -728,6 +740,7 @@ namespace Zlitz.Extra2D.BetterTile
 
                 selectedContainer.style.display = newPaintMode == BrushType.Rule ? DisplayStyle.Flex : DisplayStyle.None;
                 weight.style.display            = newPaintMode == BrushType.Weight ? DisplayStyle.Flex : DisplayStyle.None;
+                alternatingIndex.style.display  = newPaintMode == BrushType.AlternatingIndex ? DisplayStyle.Flex : DisplayStyle.None;
             });
 
             m_paintContext.onBrushChanged += (brush) =>
@@ -1928,9 +1941,14 @@ namespace Zlitz.Extra2D.BetterTile
             [SerializeField]
             private float m_weight;
 
+            [SerializeField]
+            private int m_alternatingIndex;
+
             public BrushType brushType => m_brushType;
 
             public float weight => m_weight;
+
+            public int alternatingIndex => m_alternatingIndex;
 
             public TileFilterType filterType => m_filterType;
 
@@ -1967,6 +1985,12 @@ namespace Zlitz.Extra2D.BetterTile
             public void SetWeight(PaintContext context, float weight)
             {
                 m_weight = weight;
+                context.UpdateBrush(this);
+            }
+
+            public void SetAlternatingIndex(PaintContext context, int alternatingIndex)
+            {
+                m_alternatingIndex = alternatingIndex;
                 context.UpdateBrush(this);
             }
 
@@ -2016,7 +2040,8 @@ namespace Zlitz.Extra2D.BetterTile
         internal enum BrushType
         {
             Rule,
-            Weight
+            Weight,
+            AlternatingIndex
         }
 
         internal class PaintContext
@@ -2036,8 +2061,9 @@ namespace Zlitz.Extra2D.BetterTile
             private bool m_active;
             private bool m_inverted;
 
-            private TileFilterBrush m_tileFilterBrush;
-            private WeightBrush     m_weightBrush;
+            private TileFilterBrush       m_tileFilterBrush;
+            private WeightBrush           m_weightBrush;
+            private AlternatingIndexBrush m_alternatingIndexBrush;
 
             public Brush currentBrush => m_currentBrush;
 
@@ -2093,6 +2119,15 @@ namespace Zlitz.Extra2D.BetterTile
                     m_weightBrush.SetWeight(brushInfo.weight);
 
                     m_currentBrush = m_weightBrush;
+                    onBrushChanged?.Invoke(m_currentBrush);
+
+                    return;
+                }
+                if (brushInfo.brushType == BrushType.AlternatingIndex)
+                {
+                    m_alternatingIndexBrush.SetAlternatingIndex(brushInfo.alternatingIndex);
+
+                    m_currentBrush = m_alternatingIndexBrush;
                     onBrushChanged?.Invoke(m_currentBrush);
 
                     return;
@@ -2155,6 +2190,8 @@ namespace Zlitz.Extra2D.BetterTile
                 m_tileFilterBrush.SetSpecialFilter(TileFilterType.Any);
 
                 m_weightBrush = new WeightBrush();
+
+                m_alternatingIndexBrush = new AlternatingIndexBrush();
 
                 m_currentBrush = m_tileFilterBrush;
             }
@@ -2230,6 +2267,22 @@ namespace Zlitz.Extra2D.BetterTile
                 if (this.weight != weight)
                 {
                     this.weight = weight;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        internal class AlternatingIndexBrush : Brush
+        {
+            public int alternatingIndex { get; private set; }
+
+            public bool SetAlternatingIndex(int alternatingIndex)
+            {
+                if (this.alternatingIndex != alternatingIndex)
+                {
+                    this.alternatingIndex = alternatingIndex;
                     return true;
                 }
 

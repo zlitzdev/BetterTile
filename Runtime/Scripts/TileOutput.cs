@@ -30,7 +30,7 @@ namespace Zlitz.Extra2D.BetterTile
 
         public Sprite sprite => m_sprite;
 
-        public void GetTileData(ref TileData tileData)
+        public void GetTileData(Vector3Int position, ref TileData tileData)
         {
             tileData.sprite = m_sprite;
         }

@@ -14,6 +14,9 @@ namespace Zlitz.Extra2D.BetterTile
         private float m_weight;
 
         [SerializeField]
+        private int m_alternatingIndex;
+
+        [SerializeField]
         private bool m_static;
 
         [SerializeField]
@@ -46,6 +49,8 @@ namespace Zlitz.Extra2D.BetterTile
         public TileOutput output => m_output;
 
         public float weight => m_weight;
+
+        public int alternatingIndex => m_alternatingIndex;
 
         public bool isStatic => m_static;
 

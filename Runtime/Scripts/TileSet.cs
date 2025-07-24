@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System.Reflection;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -229,28 +231,28 @@ namespace Zlitz.Extra2D.BetterTile
 
         internal static HashSet<TileSet> initializedTileSets = new HashSet<TileSet>();
 
-        private readonly Dictionary<Tile, RuleSet> m_tileRuleSets = new Dictionary<Tile, RuleSet>();
+        private readonly Dictionary<Tile, List<RuleSet>> m_tileRuleSets = new Dictionary<Tile, List<RuleSet>>();
 
-        private readonly RuleSet m_decoratorRuleSet = new RuleSet();
+        private readonly List<RuleSet> m_decoratorRuleSets = new List<RuleSet>();
 
         internal void ResetRuleSets()
         {
             m_tileRuleSets.Clear();
-            m_decoratorRuleSet.Clear();
+            m_decoratorRuleSets.Clear();
 
             initializedTileSets.Remove(this);
         }
 
-        internal RuleSet GetTileRuleSet(Tile tile)
+        internal RuleSet[] GetTileRuleSets(Tile tile)
         {
             Initialize();
-            return m_tileRuleSets[tile];
+            return m_tileRuleSets[tile].ToArray();
         }
 
-        internal RuleSet GetDecoratorRuleSet()
+        internal RuleSet[] GetDecoratorRuleSets()
         {
             Initialize();
-            return m_decoratorRuleSet;
+            return m_decoratorRuleSets.ToArray();
         }
 
         internal void Initialize()
@@ -271,14 +273,14 @@ namespace Zlitz.Extra2D.BetterTile
             }
 
             m_tileRuleSets.Clear();
-            m_decoratorRuleSet.Clear();
+            m_decoratorRuleSets.Clear();
 
             if (m_tiles != null)
             {
                 foreach (Tile tile in m_tiles)
                 {
-                    RuleSet ruleSet = new RuleSet();
-                    m_tileRuleSets.Add(tile, ruleSet);
+                    List<RuleSet> ruleSets = new List<RuleSet>();
+                    m_tileRuleSets.Add(tile, ruleSets);
                 }
             }
 
@@ -287,14 +289,17 @@ namespace Zlitz.Extra2D.BetterTile
                 int index = 0;
                 foreach (TileRule rule in m_emptySpriteRules)
                 {
+                    int alternatingIndex = rule.alternatingIndex;
                     if (rule.identity.IsTile(out Tile tile))
                     {
-                        m_tileRuleSets[tile].Insert(rule, assignedTile: tile);
+                        RuleSet ruleSet = GetRuleSet(tile, alternatingIndex);
+                        ruleSet.Insert(rule, assignedTile: tile);
                     }
                     else if (rule.identity.IsDecorator())
                     {
                         SimpleTile decorator = GetDecorator($"empty.{index}", rule.output.sprite);
-                        m_decoratorRuleSet.Insert(rule, assignedTile: decorator);
+                        RuleSet decoratorRuleSet = GetDecoratorRuleSet(alternatingIndex);
+                        decoratorRuleSet.Insert(rule, assignedTile: decorator);
                     }
                     index++;
                 }
@@ -312,14 +317,17 @@ namespace Zlitz.Extra2D.BetterTile
                     string id = ruleGroup.id;
                     foreach (TileRule rule in ruleGroup.rules)
                     {
+                        int alternatingIndex = rule.alternatingIndex;
                         if (rule.identity.IsTile(out Tile tile))
                         {
-                            m_tileRuleSets[tile].Insert(rule);
+                            RuleSet ruleSet = GetRuleSet(tile, alternatingIndex);
+                            ruleSet.Insert(rule, assignedTile: tile);
                         }
                         else if (rule.identity.IsDecorator())
                         {
                             SimpleTile decorator = GetDecorator(id, rule.output.sprite);
-                            m_decoratorRuleSet.Insert(rule, assignedTile: decorator);
+                            RuleSet decoratorRuleSet = GetDecoratorRuleSet(alternatingIndex);
+                            decoratorRuleSet.Insert(rule, assignedTile: decorator);
                         }
                     }
                 }
@@ -353,6 +361,51 @@ namespace Zlitz.Extra2D.BetterTile
         private SimpleTile GetDecorator(string id, Sprite sprite)
         {
             return m_decorators.FirstOrDefault(d => d.id == id && d.sprite == sprite);
+        }
+
+        private RuleSet GetRuleSet(Tile tile, int alternatingIndex)
+        {
+            List<RuleSet> ruleSets = m_tileRuleSets[tile];
+            foreach (RuleSet ruleSet in ruleSets)
+            {
+                if (ruleSet.alternatingIndex == alternatingIndex)
+                {
+                    return ruleSet;
+                }
+            }
+
+            RuleSet newRuleSet = new RuleSet(alternatingIndex);
+
+            int insertIndex = 0;
+            while (insertIndex < ruleSets.Count && ruleSets[insertIndex].alternatingIndex < alternatingIndex)
+            {
+                insertIndex++;
+            }
+
+            ruleSets.Insert(insertIndex, newRuleSet);
+            return newRuleSet;
+        }
+
+        private RuleSet GetDecoratorRuleSet(int alternatingIndex)
+        {
+            foreach (RuleSet ruleSet in m_decoratorRuleSets)
+            {
+                if (ruleSet.alternatingIndex == alternatingIndex)
+                {
+                    return ruleSet;
+                }
+            }
+
+            RuleSet newRuleSet = new RuleSet(alternatingIndex);
+
+            int insertIndex = 0;
+            while (insertIndex < m_decoratorRuleSets.Count && m_decoratorRuleSets[insertIndex].alternatingIndex < alternatingIndex)
+            {
+                insertIndex++;
+            }
+
+            m_decoratorRuleSets.Insert(insertIndex, newRuleSet);
+            return newRuleSet;
         }
 
         #endregion

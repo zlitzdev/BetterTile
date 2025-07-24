@@ -18,7 +18,7 @@ namespace Zlitz.Extra2D.BetterTile
             tileData.colliderType = colliderType;
             tileData.sprite = null;
 
-            output.GetTileData(ref tileData);
+            output.GetTileData(position, ref tileData);
         }
 
         public override bool GetTileAnimationData(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData)

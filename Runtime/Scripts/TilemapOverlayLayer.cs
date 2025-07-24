@@ -9,7 +9,8 @@ using UnityEngine.Tilemaps;
 namespace Zlitz.Extra2D.BetterTile
 {
     [ExecuteAlways]
-    internal class TilemapOverlayLayer : MonoBehaviour
+    [AddComponentMenu("Zlitz/Extra2D/Better Tile/Tilemap Overlay Layer")]
+    public class TilemapOverlayLayer : MonoBehaviour
     {
         [SerializeField]
         private Tilemap m_sourceTilemap;
@@ -93,8 +94,6 @@ namespace Zlitz.Extra2D.BetterTile
 
         private void Update()
         {
-            hideFlags = HideFlags.HideInInspector;
-
             if (m_layers != null)
             {
                 foreach (Layer layer in m_layers)
@@ -277,7 +276,6 @@ namespace Zlitz.Extra2D.BetterTile
             {
                 if (m_obj != null)
                 {
-                    m_obj.hideFlags = HideFlags.HideInHierarchy;
                     m_obj.transform.localPosition = new Vector3(0.0f, 0.0f, -0.0001f);
                 }
 
@@ -385,8 +383,8 @@ namespace Zlitz.Extra2D.BetterTile
                 m_sourceRenderer = sourceRenderer;
 
                 m_obj = new GameObject("Overlay Layer");
-                m_obj.transform.parent = sourceTilemap.transform;
                 m_obj.hideFlags = HideFlags.HideInHierarchy;
+                m_obj.transform.parent = sourceTilemap.transform;
 
                 m_tilemap = m_obj.AddComponent<Tilemap>();
                 CopyTilemapProperties(m_sourceTilemap, m_tilemap);

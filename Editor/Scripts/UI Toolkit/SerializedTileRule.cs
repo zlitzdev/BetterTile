@@ -16,6 +16,9 @@ namespace Zlitz.Extra2D.BetterTile
         private float m_weight;
 
         [SerializeField]
+        private int m_alternatingIndex;
+
+        [SerializeField]
         private bool m_static;
 
         [SerializeField]
@@ -51,6 +54,12 @@ namespace Zlitz.Extra2D.BetterTile
         {
             get => m_weight;
             set => m_weight = value;
+        }
+
+        public int alternatingIndex
+        {
+            get => m_alternatingIndex;
+            set => m_alternatingIndex = value;
         }
 
         public bool isStatic
@@ -89,6 +98,9 @@ namespace Zlitz.Extra2D.BetterTile
 
             SerializedProperty weightProperty = tileRuleProperty.FindPropertyRelative("m_weight");
             m_weight = weightProperty.floatValue;
+
+            SerializedProperty alternatingIndexProperty = tileRuleProperty.FindPropertyRelative("m_alternatingIndex");
+            m_alternatingIndex = alternatingIndexProperty.intValue;
 
             SerializedProperty staticProperty = tileRuleProperty.FindPropertyRelative("m_static");
             m_static = staticProperty.boolValue;
@@ -242,6 +254,9 @@ namespace Zlitz.Extra2D.BetterTile
 
             SerializedProperty weightProperty = tileRuleProperty.FindPropertyRelative("m_weight");
             weightProperty.floatValue = m_weight;
+
+            SerializedProperty alternatingIndexProperty = tileRuleProperty.FindPropertyRelative("m_alternatingIndex");
+            alternatingIndexProperty.intValue = m_alternatingIndex;
 
             SerializedProperty staticProperty = tileRuleProperty.FindPropertyRelative("m_static");
             staticProperty.boolValue = m_static;

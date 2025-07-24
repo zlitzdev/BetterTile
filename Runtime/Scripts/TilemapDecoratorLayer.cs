@@ -7,7 +7,8 @@ using UnityEngine.Tilemaps;
 namespace Zlitz.Extra2D.BetterTile
 {
     [ExecuteAlways]
-    internal class TilemapDecoratorLayer : MonoBehaviour
+    [AddComponentMenu("Zlitz/Extra2D/Better Tile/Tilemap Decorator Layer")]
+    public class TilemapDecoratorLayer : MonoBehaviour
     {
         [SerializeField]
         private GameObject m_obj;
@@ -40,8 +41,8 @@ namespace Zlitz.Extra2D.BetterTile
             tilemaps.Add(m_sourceTilemap);
 
             m_obj = new GameObject("Decorator Layer");
-            m_obj.transform.parent = transform;
             m_obj.hideFlags = HideFlags.HideInHierarchy;
+            m_obj.transform.parent = transform;
 
             m_tilemap = m_obj.AddComponent<Tilemap>();
             CopyTilemapProperties(m_sourceTilemap, m_tilemap);
@@ -79,10 +80,23 @@ namespace Zlitz.Extra2D.BetterTile
 
             if (tileSet != null)
             {
-                TileContext context = new TileContext(m_sourceTilemap, position);
-                if (tileSet.GetDecoratorRuleSet().Sample(context, m_sourceTilemap.GetRandomValue(position), out TileOutput output))
+                RuleSet[] decoratorRuleSets = tileSet.GetDecoratorRuleSets();
+                if (decoratorRuleSets != null && decoratorRuleSets.Length > 0)
                 {
-                    m_tilemap.SetTile(position, output.assignedTile);
+                    int alternatingIndex = position.x + position.y + position.z;
+                    alternatingIndex -= Mathf.FloorToInt(alternatingIndex / (float)decoratorRuleSets.Length) * decoratorRuleSets.Length;
+
+                    RuleSet decoratorRuleSet = decoratorRuleSets[alternatingIndex];
+
+                    TileContext context = new TileContext(m_sourceTilemap, position);
+                    if (decoratorRuleSet.Sample(context, m_sourceTilemap.GetRandomValue(position), out TileOutput output))
+                    {
+                        m_tilemap.SetTile(position, output.assignedTile);
+                    }
+                    else
+                    {
+                        m_tilemap.SetTile(position, null);
+                    }
                 }
                 else
                 {
@@ -109,11 +123,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         private void Update()
         {
-            hideFlags = HideFlags.HideInInspector;
-
             if (m_obj != null)
             {
-                m_obj.hideFlags = HideFlags.HideInHierarchy;
                 m_obj.transform.localPosition = new Vector3(0.0f, 0.0f, -0.0001f);
             }
 

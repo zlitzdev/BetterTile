@@ -1,12 +1,16 @@
 using System.Collections.Generic;
 
 using UnityEngine.Tilemaps;
+using UnityEngine.WSA;
 
 namespace Zlitz.Extra2D.BetterTile
 {
     internal class RuleSet
     {
         private readonly List<Entry> m_entries = new List<Entry>();
+        private int m_alternatingIndex = 0;
+
+        public int alternatingIndex => m_alternatingIndex;
 
         public void Clear()
         {
@@ -73,6 +77,11 @@ namespace Zlitz.Extra2D.BetterTile
             return false;
         }
 
+        public RuleSet(int alternatingIndex)
+        {
+            m_alternatingIndex = alternatingIndex;
+        }
+
         private Entry CreateEntry(Rule rule)
         {
             Entry entry = new Entry(rule);
@@ -129,7 +138,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             public bool IsSame(Rule other)
             {
-                return
+                return 
                     nx.IsSame(other.nx) &&
                     px.IsSame(other.px) &&
                     ny.IsSame(other.ny) &&
@@ -142,7 +151,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             public bool Contains(Rule other)
             {
-                return
+                return 
                     nx.Contains(other.nx) &&
                     px.Contains(other.px) &&
                     ny.Contains(other.ny) &&

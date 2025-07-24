@@ -23,6 +23,8 @@ namespace Zlitz.Extra2D.BetterTile
 
         private WeightPaintable m_weight;
 
+        private AlternatingIndexPaintable m_alternatingIndex;
+
         public SerializedTileRule serializedRule => m_serializedRule;
 
         public bool isStatic
@@ -59,6 +61,8 @@ namespace Zlitz.Extra2D.BetterTile
             m_pxpy.Bind(m_serializedRule.pxpy, onChanges);
 
             m_weight.Bind(m_serializedRule, onChanges);
+
+            m_alternatingIndex.Bind(m_serializedRule, onChanges);
         }
 
         public void OnTileColorChanged(SerializedTile tile)
@@ -199,6 +203,15 @@ namespace Zlitz.Extra2D.BetterTile
             weight.style.height = Length.Percent(100.0f);
             Add(weight);
             m_weight = weight;
+
+            AlternatingIndexPaintable alternatingIndex = new AlternatingIndexPaintable(context);
+            alternatingIndex.style.position = Position.Absolute;
+            alternatingIndex.style.left   = Length.Percent(0.0f);
+            alternatingIndex.style.top    = Length.Percent(0.0f);
+            alternatingIndex.style.width  = Length.Percent(100.0f);
+            alternatingIndex.style.height = Length.Percent(100.0f);
+            Add(alternatingIndex);
+            m_alternatingIndex = alternatingIndex;
         }
     }
 }
