@@ -1,6 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine.UIElements;
 
 namespace Zlitz.Extra2D.BetterTile

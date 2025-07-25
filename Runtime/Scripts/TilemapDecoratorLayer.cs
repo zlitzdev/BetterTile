@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Unity.Collections;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -80,16 +80,12 @@ namespace Zlitz.Extra2D.BetterTile
 
             if (tileSet != null)
             {
-                RuleSet[] decoratorRuleSets = tileSet.GetDecoratorRuleSets();
-                if (decoratorRuleSets != null && decoratorRuleSets.Length > 0)
+                RuleSet decoratorRuleSet = tileSet.GetDecoratorRuleSet();
+                if (decoratorRuleSet != null)
                 {
                     int alternatingIndex = position.x + position.y + position.z;
-                    alternatingIndex -= Mathf.FloorToInt(alternatingIndex / (float)decoratorRuleSets.Length) * decoratorRuleSets.Length;
-
-                    RuleSet decoratorRuleSet = decoratorRuleSets[alternatingIndex];
-
                     TileContext context = new TileContext(m_sourceTilemap, position);
-                    if (decoratorRuleSet.Sample(context, m_sourceTilemap.GetRandomValue(position), out TileOutput output))
+                    if (decoratorRuleSet.Sample(context, m_sourceTilemap.GetRandomValue(position), alternatingIndex, out TileOutput output))
                     {
                         m_tilemap.SetTile(position, output.assignedTile);
                     }

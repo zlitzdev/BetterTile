@@ -1,16 +1,12 @@
 using System.Collections.Generic;
 
 using UnityEngine.Tilemaps;
-using UnityEngine.WSA;
 
 namespace Zlitz.Extra2D.BetterTile
 {
     internal class RuleSet
     {
         private readonly List<Entry> m_entries = new List<Entry>();
-        private int m_alternatingIndex = 0;
-
-        public int alternatingIndex => m_alternatingIndex;
 
         public void Clear()
         {
@@ -49,14 +45,14 @@ namespace Zlitz.Extra2D.BetterTile
             TileOutput output = tileRule.output;
             output.assignedTile = assignedTile;
 
-            matchedEntry.outputs.Add(output, tileRule.weight);
+            matchedEntry.outputs.Add(output, tileRule.weight, tileRule.alternatingIndex);
             if (tileRule.isStatic)
             {
-                matchedEntry.staticOutputs.Add(output, tileRule.weight);
+                matchedEntry.staticOutputs.Add(output, tileRule.weight, tileRule.alternatingIndex);
             }
         }
 
-        public bool Sample(TileContext context, float randomValue, out TileOutput output)
+        public bool Sample(TileContext context, float randomValue, int alternatingIndex, out TileOutput output)
         {
             output = default;
 
@@ -71,15 +67,10 @@ namespace Zlitz.Extra2D.BetterTile
 
             if (matchedEntry != null)
             {
-                return matchedEntry.outputs.Sample(randomValue, out output);
+                return matchedEntry.outputs.Sample(randomValue, alternatingIndex, out output);
             }
 
             return false;
-        }
-
-        public RuleSet(int alternatingIndex)
-        {
-            m_alternatingIndex = alternatingIndex;
         }
 
         private Entry CreateEntry(Rule rule)

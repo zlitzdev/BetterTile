@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
-using Unity.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Unity.Collections;
 
 namespace Zlitz.Extra2D.BetterTile
 {
