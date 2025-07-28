@@ -19,6 +19,9 @@ namespace Zlitz.Extra2D.BetterTile
         private TilemapRenderer m_sourceRenderer;
 
         [SerializeField]
+        private SpriteMask m_sourceSpriteMask;
+
+        [SerializeField]
         private List<Layer> m_layers;
 
         private List<Layer> m_filteredLayers;
@@ -39,6 +42,7 @@ namespace Zlitz.Extra2D.BetterTile
             tilemaps.Add(m_sourceTilemap);
 
             m_sourceRenderer = tilemap.GetComponent<TilemapRenderer>();
+            m_sourceSpriteMask = tilemap.GetComponent<SpriteMask>();
         }
 
         public void Resolve(Vector3Int position, TileSet tileSet = null)
@@ -113,7 +117,7 @@ namespace Zlitz.Extra2D.BetterTile
             Layer layer = m_layers.FirstOrDefault(l => l.tileSet == tileSet && l.overlayGroupId == overlayGroupId);
             if (layer == null)
             {
-                layer = new Layer(m_sourceTilemap, m_sourceRenderer, tileSet, overlayGroupId);
+                layer = new Layer(m_sourceTilemap, m_sourceRenderer, m_sourceSpriteMask, tileSet, overlayGroupId);
                 m_layers.Add(layer);
             }
 
@@ -199,6 +203,21 @@ namespace Zlitz.Extra2D.BetterTile
             destination.chunkCullingBounds       = source.chunkCullingBounds;
             destination.sharedMaterial           = source.sharedMaterial;
         }
+        
+        private static void CopySpriteMaskProperties(SpriteMask source, SpriteMask destination)
+        {
+            destination.sprite = source.sprite;
+            destination.alphaCutoff = source.alphaCutoff;
+            destination.isCustomRangeActive = source.isCustomRangeActive;
+
+            if (source.isCustomRangeActive)
+            {
+                destination.frontSortingLayerID = source.frontSortingLayerID;
+                destination.frontSortingOrder = source.frontSortingOrder;
+                destination.backSortingLayerID = source.backSortingLayerID;
+                destination.backSortingOrder = source.backSortingOrder;
+            }
+        }
 
         [Serializable]
         private class Layer
@@ -210,6 +229,9 @@ namespace Zlitz.Extra2D.BetterTile
             private TilemapRenderer m_sourceRenderer;
 
             [SerializeField]
+            private SpriteMask m_sourceSpriteMask;
+
+            [SerializeField]
             private GameObject m_obj;
 
             [SerializeField]
@@ -217,6 +239,9 @@ namespace Zlitz.Extra2D.BetterTile
 
             [SerializeField]
             private TilemapRenderer m_renderer;
+
+            [SerializeField]
+            private SpriteMask m_spriteMask;
 
             [SerializeField]
             private TileSet m_tileSet;
@@ -283,6 +308,12 @@ namespace Zlitz.Extra2D.BetterTile
                 {
                     m_renderer.enabled = m_sourceRenderer.enabled;
                     CopyTilemapRendererProperties(m_sourceRenderer, m_renderer);
+                }
+
+                if (m_spriteMask != null && m_sourceSpriteMask != null)
+                {
+                    m_spriteMask.enabled = m_sourceSpriteMask.enabled;
+                    CopySpriteMaskProperties(m_sourceSpriteMask, m_spriteMask);
                 }
 
                 if (m_tilemap != null && m_sourceTilemap != null)
@@ -374,7 +405,7 @@ namespace Zlitz.Extra2D.BetterTile
                 EvaluateAllTiles();
             }
 
-            public Layer(Tilemap sourceTilemap, TilemapRenderer sourceRenderer, TileSet tileSet, string overlayGroupId)
+            public Layer(Tilemap sourceTilemap, TilemapRenderer sourceRenderer, SpriteMask sourceSpriteMask, TileSet tileSet, string overlayGroupId)
             {
                 m_tileSet = tileSet;
                 m_overlayGroupId = overlayGroupId;
@@ -393,6 +424,12 @@ namespace Zlitz.Extra2D.BetterTile
                 {
                     m_renderer = m_obj.AddComponent<TilemapRenderer>();
                     CopyTilemapRendererProperties(m_sourceRenderer, m_renderer);
+                }
+
+                if (m_sourceSpriteMask != null)
+                {
+                    m_spriteMask = m_obj.AddComponent<SpriteMask>();
+                    CopySpriteMaskProperties(m_sourceSpriteMask, m_spriteMask);
                 }
             }
 

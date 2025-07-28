@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Unity.Collections;
+using static UnityEngine.GraphicsBuffer;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -24,6 +25,12 @@ namespace Zlitz.Extra2D.BetterTile
         
         [SerializeField]
         private TilemapRenderer m_sourceRenderer;
+
+        [SerializeField]
+        private SpriteMask m_spriteMask;
+
+        [SerializeField]
+        private SpriteMask m_sourceSpriteMask;
 
         internal static readonly HashSet<Tilemap> tilemaps = new HashSet<Tilemap>();
 
@@ -53,6 +60,14 @@ namespace Zlitz.Extra2D.BetterTile
 
                 m_renderer = m_obj.AddComponent<TilemapRenderer>();
                 CopyTilemapRendererProperties(m_sourceRenderer, m_renderer);
+            }
+
+            if (tilemap.TryGetComponent(out SpriteMask spriteMask))
+            {
+                m_sourceSpriteMask = spriteMask;
+
+                m_spriteMask = m_obj.AddComponent<SpriteMask>();
+                CopySpriteMaskProperties(m_sourceSpriteMask, m_spriteMask);
             }
         }
 
@@ -130,6 +145,12 @@ namespace Zlitz.Extra2D.BetterTile
                 CopyTilemapRendererProperties(m_sourceRenderer, m_renderer);
             }
 
+            if (m_spriteMask != null && m_sourceSpriteMask != null)
+            {
+                m_spriteMask.enabled = m_sourceSpriteMask.enabled;
+                CopySpriteMaskProperties(m_sourceSpriteMask, m_spriteMask);
+            }
+
             if (m_tilemap != null && m_sourceTilemap != null)
             {
                 m_tilemap.enabled = m_sourceTilemap.enabled;
@@ -181,6 +202,21 @@ namespace Zlitz.Extra2D.BetterTile
             destination.detectChunkCullingBounds = source.detectChunkCullingBounds;
             destination.chunkCullingBounds       = source.chunkCullingBounds;
             destination.sharedMaterial           = source.sharedMaterial;
+        }
+ 
+        private static void CopySpriteMaskProperties(SpriteMask source, SpriteMask destination)
+        {
+            destination.sprite = source.sprite;
+            destination.alphaCutoff = source.alphaCutoff;
+            destination.isCustomRangeActive = source.isCustomRangeActive;
+
+            if (source.isCustomRangeActive)
+            {
+                destination.frontSortingLayerID = source.frontSortingLayerID;
+                destination.frontSortingOrder = source.frontSortingOrder;
+                destination.backSortingLayerID = source.backSortingLayerID;
+                destination.backSortingOrder = source.backSortingOrder;
+            }
         }
     }
 }
