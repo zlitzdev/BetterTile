@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using Unity.Collections;
-using static UnityEngine.GraphicsBuffer;
+using UnityEngine.Tilemaps;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -49,7 +48,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             m_obj = new GameObject("Decorator Layer");
             m_obj.hideFlags = HideFlags.HideInHierarchy;
-            m_obj.transform.parent = transform;
+            m_obj.transform.parent = this == null ? null : transform;
 
             m_tilemap = m_obj.AddComponent<Tilemap>();
             CopyTilemapProperties(m_sourceTilemap, m_tilemap);

@@ -3,8 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using Unity.Collections;
+using UnityEngine.Tilemaps;
 
 namespace Zlitz.Extra2D.BetterTile
 {
@@ -415,7 +415,7 @@ namespace Zlitz.Extra2D.BetterTile
 
                 m_obj = new GameObject("Overlay Layer");
                 m_obj.hideFlags = HideFlags.HideInHierarchy;
-                m_obj.transform.parent = sourceTilemap.transform;
+                m_obj.transform.parent = sourceTilemap == null ? null : sourceTilemap.transform;
 
                 m_tilemap = m_obj.AddComponent<Tilemap>();
                 CopyTilemapProperties(m_sourceTilemap, m_tilemap);
