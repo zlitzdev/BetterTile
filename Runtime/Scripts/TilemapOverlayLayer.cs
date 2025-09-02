@@ -35,9 +35,6 @@ namespace Zlitz.Extra2D.BetterTile
                 return;
             }
 
-            Tilemap.tilemapTileChanged      += OnTileChanged;
-            Tilemap.tilemapPositionsChanged += OnTileChanged;
-
             m_sourceTilemap = tilemap;
             tilemaps.Add(m_sourceTilemap);
 
@@ -70,9 +67,6 @@ namespace Zlitz.Extra2D.BetterTile
         {
             if (m_sourceTilemap != null)
             {
-                Tilemap.tilemapTileChanged      -= OnTileChanged;
-                Tilemap.tilemapPositionsChanged -= OnTileChanged;
-
                 tilemaps.Remove(m_sourceTilemap);
                 m_sourceTilemap = null;
             }
@@ -157,32 +151,6 @@ namespace Zlitz.Extra2D.BetterTile
         }
 
         #endif
-
-        private void OnTileChanged(Tilemap tilemap, NativeArray<Vector3Int> positions)
-        {
-            if (tilemap != m_sourceTilemap)
-            {
-                return;
-            }
-
-            foreach (Vector3Int position in positions)
-            {
-                Resolve(position);
-            }
-        }
-
-        private void OnTileChanged(Tilemap tilemap, Tilemap.SyncTile[] tiles)
-        {
-            if (tilemap != m_sourceTilemap)
-            {
-                return;
-            }
-
-            foreach (Tilemap.SyncTile syncTile in tiles)
-            {
-                Resolve(syncTile.position);
-            }
-        }
 
         private static void CopyTilemapProperties(Tilemap source, Tilemap destination)
         {

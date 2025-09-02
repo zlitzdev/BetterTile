@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -375,6 +376,23 @@ namespace Zlitz.Extra2D.BetterTile
                 return;
             }
 
+            if (Application.isPlaying)
+            {
+                decoratorLayer.StartCoroutine(ResolveDecoratorDelayed(decoratorLayer, position));
+            }
+            else
+            {
+                #if UNITY_EDITOR
+
+                EditorApplication.delayCall += () => decoratorLayer.Resolve(position);
+
+                #endif
+            }
+        }
+
+        private IEnumerator ResolveDecoratorDelayed(TilemapDecoratorLayer decoratorLayer, Vector3Int position)
+        {
+            yield return new WaitForSecondsRealtime(0.01f);
             decoratorLayer.Resolve(position);
         }
 
@@ -385,6 +403,23 @@ namespace Zlitz.Extra2D.BetterTile
                 return;
             }
 
+            if (Application.isPlaying)
+            {
+                overlayLayer.StartCoroutine(ResolveOverlayDelayed(overlayLayer, position));
+            }
+            else
+            {
+                #if UNITY_EDITOR
+
+                EditorApplication.delayCall += () => overlayLayer.Resolve(position, this);
+
+                #endif
+            }
+        }
+
+        private IEnumerator ResolveOverlayDelayed(TilemapOverlayLayer overlayLayer, Vector3Int position)
+        {
+            yield return new WaitForSecondsRealtime(0.01f);
             overlayLayer.Resolve(position, this);
         }
 
@@ -393,7 +428,7 @@ namespace Zlitz.Extra2D.BetterTile
         #region Events
 
 
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
 
         public static event Action<TileSet> onTileSetUpdated;
 
