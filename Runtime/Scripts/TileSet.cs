@@ -371,8 +371,6 @@ namespace Zlitz.Extra2D.BetterTile
 
         #region Decorators & Overlays
 
-        internal static TileLayersResolver s_resolver;
-
         internal void ResolveDecorator(TilemapDecoratorLayer decoratorLayer, Vector3Int position)
         {
             if (decoratorLayer == null)
@@ -382,7 +380,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             if (Application.isPlaying)
             {
-                s_resolver.StartCoroutine(ResolveDecoratorDelayed(decoratorLayer, position));
+                CoroutineRunner.Run(ResolveDecoratorDelayed(decoratorLayer, position));
             }
             else
             {
@@ -409,7 +407,7 @@ namespace Zlitz.Extra2D.BetterTile
 
             if (Application.isPlaying)
             {
-                s_resolver.StartCoroutine(ResolveOverlayDelayed(overlayLayer, position));
+                CoroutineRunner.Run(ResolveOverlayDelayed(overlayLayer, position));
             }
             else
             {
@@ -446,11 +444,6 @@ namespace Zlitz.Extra2D.BetterTile
         [RuntimeInitializeOnLoadMethod]
         internal static void ResetTileSets()
         {
-            GameObject resolverObject = new GameObject("Tile Layers Resolver");
-            GameObject.DontDestroyOnLoad(resolverObject);
-
-            TileSet.s_resolver = resolverObject.AddComponent<TileLayersResolver>();
-
             TileSet[] tileSets = TileSet.initializedTileSets.ToArray();
             foreach (TileSet tileSet in tileSets)
             {
